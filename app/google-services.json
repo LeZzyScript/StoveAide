@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "935771540680",
+    "project_id": "stoveaide",
+    "storage_bucket": "stoveaide.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:935771540680:android:4c282b91f4be93d644a9fd",
+        "android_client_info": {
+          "package_name": "com.example.stoveaide"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCKB5BUPdMx7QYwoObJ-8ZExmW2JcguplQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

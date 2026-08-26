@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="bg_welcome_gray">#ECECEC</color>
+    <color name="bg_dashboard_cream">#FAF7F2</color>
+    <color name="pill_black">#0F0F0F</color>
+    <color name="pill_black_pressed">#2A2A2A</color>
+    <color name="pill_white">#FFFFFF</color>
+    <color name="pill_border_gray">#D0D0D0</color>
+    <color name="input_bg_gray">#858585</color>
+    <color name="input_bg_focused">#666666</color>
+    <color name="input_text_color">#FFFFFF</color>
+    <color name="input_hint_color">#E0E0E0</color>
+    <color name="brand_teal">#2C8290</color>
+    <color name="brand_terracotta">#C06C53</color>
+    <color name="text_primary">#1C1C1C</color>
+    <color name="text_secondary">#666666</color>
+    <color name="text_muted">#8E8E93</color>
+    <color name="card_bg_white">#FFFFFF</color>
+    <color name="card_leaf_bg">#E8F3EC</color>
+    <color name="card_heart_bg">#FBECE9</color>
+    <color name="card_shield_bg">#ECEFFB</color>
+    <color name="gauge_bg_gray">#E5E2DC</color>
+    <color name="accent_orange">#E05A36</color>
+    <color name="back_btn_stroke">#38A1FF</color>
+    <color name="back_btn_text">#2B8CE6</color>
+</resources>

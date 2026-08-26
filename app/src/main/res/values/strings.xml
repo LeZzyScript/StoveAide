@@ -1,0 +1,24 @@
+<resources>
+    <string name="app_name">StoveAide</string>
+    <string name="slogan">Know your stove is safe, even when you\'re not standing in front of it.</string>
+    <string name="create_account">Create account</string>
+    <string name="login">Login</string>
+    <string name="log_in">Log in</string>
+    <string name="create_your_account">Create your account</string>
+    <string name="register_subtitle">Takes about a minute. You can add your stove sensor right after.</string>
+    <string name="full_name">Full Name</string>
+    <string name="email">Email</string>
+    <string name="password">Password</string>
+    <string name="already_have_account">Already have an account? Log in</string>
+    <string name="welcome_back">Welcome back</string>
+    <string name="login_subtitle">Log in to see your stove\'s current status.</string>
+    <string name="forgot_password">Forgot Password</string>
+    <string name="new_here_create_account">New here? Create an account</string>
+
+    <string name="back">Back</string>
+    <string name="your_habit_rituals">Stove Safety Status</string>
+    <string name="longer_than_usual">LONGER THAN USUAL</string>
+    <string name="alert_message">The stove has been on 14 min with no check-in. You\'ll get an alert at 20 min if it\'s still active.</string>
+    <string name="monitoring_btn">I\'m Monitoring</string>
+    <string name="shutoff_lpg">Emergency LPG Cutoff</string>
+</resources>

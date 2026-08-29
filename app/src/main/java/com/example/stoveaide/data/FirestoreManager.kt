@@ -45,7 +45,7 @@ object FirestoreManager {
     fun getUserProfile(uid: String, onResult: (UserProfile?) -> Unit) {
         val db = firestore
         if (db == null) {
-            onResult(UserProfile(uid = uid, fullName = "Juan Dela Cruz", email = "juan@example.com"))
+            onResult(UserProfile(uid = uid, firstName = "Juan", lastName = "Dela Cruz", fullName = "Juan Dela Cruz", email = "juan@example.com"))
             return
         }
 
@@ -54,10 +54,10 @@ object FirestoreManager {
             .get()
             .addOnSuccessListener { snapshot ->
                 val profile = snapshot.toObject(UserProfile::class.java)
-                onResult(profile ?: UserProfile(uid = uid, fullName = "Juan Dela Cruz"))
+                onResult(profile ?: UserProfile(uid = uid, firstName = "Juan", lastName = "Dela Cruz", fullName = "Juan Dela Cruz"))
             }
             .addOnFailureListener {
-                onResult(UserProfile(uid = uid, fullName = "Juan Dela Cruz"))
+                onResult(UserProfile(uid = uid, firstName = "Juan", lastName = "Dela Cruz", fullName = "Juan Dela Cruz"))
             }
     }
 

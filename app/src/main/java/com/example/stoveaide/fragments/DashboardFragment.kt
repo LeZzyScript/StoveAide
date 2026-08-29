@@ -38,16 +38,28 @@ class DashboardFragment : Fragment() {
         if (uid != null) {
             FirestoreManager.getUserProfile(uid) { user ->
                 if (user != null) {
-                    val firstName = user.fullName.split(" ").firstOrNull() ?: "John"
+                    val firstName = when {
+                        user.firstName.isNotBlank() -> user.firstName
+                        user.fullName.isNotBlank() -> user.fullName.split(" ").firstOrNull() ?: "User"
+                        else -> "User"
+                    }
                     binding.tvWelcomeTitle.text = "Welcome, $firstName"
                     
                     // Initials for avatar circle badge
-                    val parts = user.fullName.trim().split(" ")
-                    val initials = if (parts.size >= 2) {
-                        "${parts[0].firstOrNull() ?: ""}${parts[1].firstOrNull() ?: ""}"
-                    } else {
-                        user.fullName.take(2)
-                    }.uppercase()
+                    val initials = when {
+                        user.firstName.isNotBlank() && user.lastName.isNotBlank() -> {
+                            "${user.firstName.first()}${user.lastName.first()}".uppercase()
+                        }
+                        user.fullName.isNotBlank() -> {
+                            val parts = user.fullName.trim().split(" ")
+                            if (parts.size >= 2) {
+                                "${parts[0].firstOrNull() ?: ""}${parts[1].firstOrNull() ?: ""}".uppercase()
+                            } else {
+                                user.fullName.take(2).uppercase()
+                            }
+                        }
+                        else -> "U"
+                    }
                     if (initials.isNotEmpty()) {
                         binding.tvProfileBadge.text = initials
                     }

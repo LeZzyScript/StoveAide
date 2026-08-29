@@ -37,26 +37,51 @@ class RegisterActivity : AppCompatActivity() {
     }
 
     private fun performRegistration() {
-        val fullName = binding.etFullName.text.toString().trim()
+        val firstName = binding.etFirstName.text.toString().trim()
+        val lastName = binding.etLastName.text.toString().trim()
         val email = binding.etEmail.text.toString().trim()
         val password = binding.etPassword.text.toString().trim()
+        val confirmPassword = binding.etConfirmPassword.text.toString().trim()
 
-        if (fullName.isEmpty()) {
-            binding.etFullName.error = "Please enter your full name"
+        if (firstName.isEmpty()) {
+            binding.etFirstName.error = "Please enter your first name"
+            binding.etFirstName.requestFocus()
+            return
+        }
+
+        if (lastName.isEmpty()) {
+            binding.etLastName.error = "Please enter your last name"
+            binding.etLastName.requestFocus()
             return
         }
 
         if (email.isEmpty()) {
             binding.etEmail.error = "Please enter your email"
+            binding.etEmail.requestFocus()
             return
         }
 
         if (password.length < 6) {
             binding.etPassword.error = "Password must be at least 6 characters"
+            binding.etPassword.requestFocus()
+            return
+        }
+
+        if (confirmPassword.isEmpty()) {
+            binding.etConfirmPassword.error = "Please confirm your password"
+            binding.etConfirmPassword.requestFocus()
+            return
+        }
+
+        if (password != confirmPassword) {
+            binding.etConfirmPassword.error = "Passwords do not match"
+            binding.etConfirmPassword.requestFocus()
             return
         }
 
         setLoading(true)
+
+        val fullName = "$firstName $lastName".trim()
 
         val auth = FirestoreManager.auth
         if (auth != null) {
@@ -66,6 +91,8 @@ class RegisterActivity : AppCompatActivity() {
                         val firebaseUser = task.result?.user
                         val userProfile = UserProfile(
                             uid = firebaseUser?.uid ?: "",
+                            firstName = firstName,
+                            lastName = lastName,
                             fullName = fullName,
                             email = email
                         )
@@ -73,14 +100,11 @@ class RegisterActivity : AppCompatActivity() {
                         FirestoreManager.saveUserProfile(userProfile) { success, error ->
                             setLoading(false)
                             if (success) {
-                                Toast.makeText(this, "Account created successfully!", Toast.LENGTH_SHORT).show()
-                                startActivity(Intent(this, MainActivity::class.java))
-                                finishAffinity()
+                                Toast.makeText(this, "Account created successfully! Please log in.", Toast.LENGTH_SHORT).show()
                             } else {
-                                Toast.makeText(this, "Firestore error: $error", Toast.LENGTH_LONG).show()
-                                startActivity(Intent(this, MainActivity::class.java))
-                                finishAffinity()
+                                Toast.makeText(this, "Account created! (Firestore sync pending: $error)", Toast.LENGTH_LONG).show()
                             }
+                            navigateToLogin()
                         }
                     } else {
                         setLoading(false)
@@ -90,10 +114,17 @@ class RegisterActivity : AppCompatActivity() {
         } else {
             // Local Demo Mode fallback
             setLoading(false)
-            Toast.makeText(this, "Account created (Demo Mode)", Toast.LENGTH_SHORT).show()
-            startActivity(Intent(this, MainActivity::class.java))
-            finishAffinity()
+            Toast.makeText(this, "Account created (Demo Mode). Please log in.", Toast.LENGTH_SHORT).show()
+            navigateToLogin()
         }
+    }
+
+    private fun navigateToLogin() {
+        FirestoreManager.auth?.signOut()
+        val intent = Intent(this, LoginActivity::class.java)
+        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        startActivity(intent)
+        finishAffinity()
     }
 
     private fun setLoading(isLoading: Boolean) {
@@ -106,3 +137,4 @@ class RegisterActivity : AppCompatActivity() {
         }
     }
 }
+

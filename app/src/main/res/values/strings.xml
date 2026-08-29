@@ -7,8 +7,11 @@
     <string name="create_your_account">Create your account</string>
     <string name="register_subtitle">Takes about a minute. You can add your stove sensor right after.</string>
     <string name="full_name">Full Name</string>
+    <string name="first_name">First Name</string>
+    <string name="last_name">Last Name</string>
     <string name="email">Email</string>
     <string name="password">Password</string>
+    <string name="confirm_password">Confirm Password</string>
     <string name="already_have_account">Already have an account? Log in</string>
     <string name="welcome_back">Welcome back</string>
     <string name="login_subtitle">Log in to see your stove\'s current status.</string>

@@ -31,7 +31,7 @@ class LoginActivity : AppCompatActivity() {
         }
 
         binding.tvForgotPassword.setOnClickListener {
-            handleForgotPassword()
+            startActivity(Intent(this, ForgotPasswordActivity::class.java))
         }
 
         binding.btnSubmitLogin.setOnClickListener {
@@ -74,23 +74,6 @@ class LoginActivity : AppCompatActivity() {
             startActivity(Intent(this, MainActivity::class.java))
             finishAffinity()
         }
-    }
-
-    private fun handleForgotPassword() {
-        val email = binding.etEmail.text.toString().trim()
-        if (email.isEmpty()) {
-            Toast.makeText(this, "Enter your email address to reset password", Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        FirestoreManager.auth?.sendPasswordResetEmail(email)
-            ?.addOnCompleteListener { task ->
-                if (task.isSuccessful) {
-                    Toast.makeText(this, "Password reset email sent to $email", Toast.LENGTH_LONG).show()
-                } else {
-                    Toast.makeText(this, "Error: ${task.exception?.message}", Toast.LENGTH_SHORT).show()
-                }
-            }
     }
 
     private fun setLoading(isLoading: Boolean) {

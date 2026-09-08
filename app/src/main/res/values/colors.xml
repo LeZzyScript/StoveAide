@@ -25,4 +25,9 @@
     <color name="accent_orange">#E05A36</color>
     <color name="back_btn_stroke">#38A1FF</color>
     <color name="back_btn_text">#2B8CE6</color>
+    <color name="rule_valid">#10B981</color>
+    <color name="rule_invalid">#9E9E9E</color>
+    <color name="rule_valid_bg">#E8F5E9</color>
+    <color name="otp_box_bg">#F5F5F7</color>
+    <color name="otp_box_stroke">#D2D2D7</color>
 </resources>

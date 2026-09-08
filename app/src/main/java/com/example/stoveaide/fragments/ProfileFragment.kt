@@ -33,12 +33,20 @@ class ProfileFragment : Fragment() {
             binding.tvUserEmail.text = currentUser.email ?: "juan@example.com"
             FirestoreManager.getUserProfile(currentUser.uid) { profile ->
                 if (profile != null) {
-                    binding.tvUserName.text = profile.fullName
+                    binding.tvUserName.text = profile.getDisplayName()
                     binding.tvStoveDeviceId.text = profile.stoveDeviceId
                     
-                    val initials = profile.fullName.trim().split(" ")
-                        .mapNotNull { it.firstOrNull()?.toString() }
-                        .take(2).joinToString("").uppercase()
+                    val initials = when {
+                        profile.firstName.isNotBlank() && profile.lastName.isNotBlank() -> {
+                            "${profile.firstName.first()}${profile.lastName.first()}".uppercase()
+                        }
+                        profile.fullName.isNotBlank() -> {
+                            profile.fullName.trim().split(" ")
+                                .mapNotNull { it.firstOrNull()?.toString() }
+                                .take(2).joinToString("").uppercase()
+                        }
+                        else -> "U"
+                    }
                     if (initials.isNotEmpty()) {
                         binding.tvProfileAvatar.text = initials
                     }

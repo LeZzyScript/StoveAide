@@ -1,7 +1,6 @@
 package com.example.stoveaide
 
 import android.content.Intent
-import android.content.res.ColorStateList
 import android.os.Bundle
 import android.text.Editable
 import android.text.Html
@@ -13,8 +12,8 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import com.example.stoveaide.data.FirestoreManager
-import com.example.stoveaide.data.OtpManager
 import com.example.stoveaide.databinding.ActivityRegisterBinding
+import com.example.stoveaide.models.UserProfile
 import com.example.stoveaide.utils.PasswordValidationResult
 import com.example.stoveaide.utils.PasswordValidator
 
@@ -27,12 +26,12 @@ class RegisterActivity : AppCompatActivity() {
         binding = ActivityRegisterBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Format footer link
-        binding.tvLoginLink.text = Html.fromHtml("Already have an account? <font color='#38A1FF'>Log in</font>", Html.FROM_HTML_MODE_LEGACY)
+        binding.tvLoginLink.text = Html.fromHtml(
+            "Already have an account? <font color='#38A1FF'>Log in</font>",
+            Html.FROM_HTML_MODE_LEGACY
+        )
 
-        binding.btnBack.setOnClickListener {
-            finish()
-        }
+        binding.btnBack.setOnClickListener { finish() }
 
         binding.tvLoginLink.setOnClickListener {
             startActivity(Intent(this, LoginActivity::class.java))
@@ -46,7 +45,6 @@ class RegisterActivity : AppCompatActivity() {
         }
     }
 
-<<<<<<< HEAD
     private fun setupPasswordLiveValidation() {
         binding.etPassword.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
@@ -71,32 +69,17 @@ class RegisterActivity : AppCompatActivity() {
         val colorRes = if (isSatisfied) R.color.rule_valid else R.color.rule_invalid
         val iconRes = if (isSatisfied) R.drawable.ic_check_circle else R.drawable.ic_circle_dot
         val color = ContextCompat.getColor(this, colorRes)
-
         icon.setImageResource(iconRes)
         label.setTextColor(color)
     }
 
     private fun initiateRegistration() {
-        val fullName = binding.etFullName.text.toString().trim()
+        val firstName = binding.etFirstName.text.toString().trim()
+        val lastName = binding.etLastName.text.toString().trim()
+        val fullName = "$firstName $lastName".trim()
         val email = binding.etEmail.text.toString().trim()
         val password = binding.etPassword.text.toString()
         val confirmPassword = binding.etConfirmPassword.text.toString()
-
-        if (fullName.isEmpty()) {
-            binding.etFullName.error = "Please enter your full name"
-            binding.etFullName.requestFocus()
-            return
-        }
-
-        if (email.isEmpty() || !android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-            binding.etEmail.error = "Please enter a valid email address"
-=======
-    private fun performRegistration() {
-        val firstName = binding.etFirstName.text.toString().trim()
-        val lastName = binding.etLastName.text.toString().trim()
-        val email = binding.etEmail.text.toString().trim()
-        val password = binding.etPassword.text.toString().trim()
-        val confirmPassword = binding.etConfirmPassword.text.toString().trim()
 
         if (firstName.isEmpty()) {
             binding.etFirstName.error = "Please enter your first name"
@@ -110,36 +93,21 @@ class RegisterActivity : AppCompatActivity() {
             return
         }
 
-        if (email.isEmpty()) {
-            binding.etEmail.error = "Please enter your email"
->>>>>>> 615b3947089dc391e55431fe5a98eccf0911c76d
+        if (email.isEmpty() || !android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            binding.etEmail.error = "Please enter a valid email address"
             binding.etEmail.requestFocus()
             return
         }
 
-<<<<<<< HEAD
         val validationResult = PasswordValidator.validate(password)
         if (!validationResult.isValid) {
             val errorMsg = PasswordValidator.getErrorMessage(validationResult)
             binding.etPassword.error = errorMsg
             Toast.makeText(this, errorMsg, Toast.LENGTH_LONG).show()
-=======
-        if (password.length < 6) {
-            binding.etPassword.error = "Password must be at least 6 characters"
->>>>>>> 615b3947089dc391e55431fe5a98eccf0911c76d
             binding.etPassword.requestFocus()
             return
         }
 
-<<<<<<< HEAD
-=======
-        if (confirmPassword.isEmpty()) {
-            binding.etConfirmPassword.error = "Please confirm your password"
-            binding.etConfirmPassword.requestFocus()
-            return
-        }
-
->>>>>>> 615b3947089dc391e55431fe5a98eccf0911c76d
         if (password != confirmPassword) {
             binding.etConfirmPassword.error = "Passwords do not match"
             binding.etConfirmPassword.requestFocus()
@@ -148,68 +116,46 @@ class RegisterActivity : AppCompatActivity() {
 
         setLoading(true)
 
-<<<<<<< HEAD
-        // Generate and send 6-digit OTP to user's email
-        OtpManager.generateAndSendOtp(email, OtpManager.PURPOSE_REGISTRATION) { success, code, error ->
-            setLoading(false)
-            if (success) {
-                Toast.makeText(this, "6-digit code sent to $email! (Code: $code)", Toast.LENGTH_LONG).show()
-                val intent = Intent(this, OtpVerificationActivity::class.java).apply {
-                    putExtra(OtpVerificationActivity.EXTRA_EMAIL, email)
-                    putExtra(OtpVerificationActivity.EXTRA_PURPOSE, OtpManager.PURPOSE_REGISTRATION)
-                    putExtra(OtpVerificationActivity.EXTRA_FULL_NAME, fullName)
-                    putExtra(OtpVerificationActivity.EXTRA_PASSWORD, password)
-                }
-                startActivity(intent)
-            } else {
-                Toast.makeText(this, "Failed to send verification code: $error", Toast.LENGTH_LONG).show()
-            }
-=======
-        val fullName = "$firstName $lastName".trim()
-
         val auth = FirestoreManager.auth
         if (auth != null) {
             auth.createUserWithEmailAndPassword(email, password)
-                .addOnCompleteListener { task ->
-                    if (task.isSuccessful) {
-                        val firebaseUser = task.result?.user
-                        val userProfile = UserProfile(
-                            uid = firebaseUser?.uid ?: "",
-                            firstName = firstName,
-                            lastName = lastName,
-                            fullName = fullName,
-                            email = email
-                        )
-                        // Save to Cloud Firestore
-                        FirestoreManager.saveUserProfile(userProfile) { success, error ->
-                            setLoading(false)
-                            if (success) {
-                                Toast.makeText(this, "Account created successfully! Please log in.", Toast.LENGTH_SHORT).show()
-                            } else {
-                                Toast.makeText(this, "Account created! (Firestore sync pending: $error)", Toast.LENGTH_LONG).show()
-                            }
-                            navigateToLogin()
-                        }
-                    } else {
+                .addOnSuccessListener { result ->
+                    val user = result.user
+                    val profile = UserProfile(
+                        uid = user?.uid ?: "",
+                        fullName = fullName,
+                        email = email
+                    )
+                    runOnUiThread {
                         setLoading(false)
-                        Toast.makeText(this, "Registration failed: ${task.exception?.message}", Toast.LENGTH_LONG).show()
+                        Toast.makeText(this, "Account created successfully!", Toast.LENGTH_SHORT).show()
+                        navigateToDashboard()
+                    }
+
+                    // Profile persistence must not block entry to the dashboard.
+                    FirestoreManager.saveUserProfile(profile) { saved, error ->
+                        if (!saved) {
+                            android.util.Log.e("RegisterActivity", "Profile setup failed: $error")
+                        }
+                    }
+                }
+                .addOnFailureListener { error ->
+                    runOnUiThread {
+                        setLoading(false)
+                        Toast.makeText(this, "Registration failed: ${error.localizedMessage}", Toast.LENGTH_LONG).show()
                     }
                 }
         } else {
-            // Local Demo Mode fallback
             setLoading(false)
-            Toast.makeText(this, "Account created (Demo Mode). Please log in.", Toast.LENGTH_SHORT).show()
-            navigateToLogin()
->>>>>>> 615b3947089dc391e55431fe5a98eccf0911c76d
+            Toast.makeText(this, "Registration service is unavailable. Please try again.", Toast.LENGTH_LONG).show()
         }
     }
 
-    private fun navigateToLogin() {
-        FirestoreManager.auth?.signOut()
-        val intent = Intent(this, LoginActivity::class.java)
-        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+    private fun navigateToDashboard() {
+        val intent = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
         startActivity(intent)
-        finishAffinity()
     }
 
     private fun setLoading(isLoading: Boolean) {
@@ -222,4 +168,3 @@ class RegisterActivity : AppCompatActivity() {
         }
     }
 }
-

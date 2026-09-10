@@ -12,8 +12,8 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import com.example.stoveaide.data.FirestoreManager
+import com.example.stoveaide.data.LocalAuthManager
 import com.example.stoveaide.databinding.ActivityRegisterBinding
-import com.example.stoveaide.models.UserProfile
 import com.example.stoveaide.utils.PasswordValidationResult
 import com.example.stoveaide.utils.PasswordValidator
 
@@ -76,7 +76,6 @@ class RegisterActivity : AppCompatActivity() {
     private fun initiateRegistration() {
         val firstName = binding.etFirstName.text.toString().trim()
         val lastName = binding.etLastName.text.toString().trim()
-        val fullName = "$firstName $lastName".trim()
         val email = binding.etEmail.text.toString().trim()
         val password = binding.etPassword.text.toString()
         val confirmPassword = binding.etConfirmPassword.text.toString()
@@ -115,44 +114,20 @@ class RegisterActivity : AppCompatActivity() {
         }
 
         setLoading(true)
-
-        val auth = FirestoreManager.auth
-        if (auth != null) {
-            auth.createUserWithEmailAndPassword(email, password)
-                .addOnSuccessListener { result ->
-                    val user = result.user
-                    val profile = UserProfile(
-                        uid = user?.uid ?: "",
-                        fullName = fullName,
-                        email = email
-                    )
-                    runOnUiThread {
-                        setLoading(false)
-                        Toast.makeText(this, "Account created successfully!", Toast.LENGTH_SHORT).show()
-                        navigateToDashboard()
-                    }
-
-                    // Profile persistence must not block entry to the dashboard.
-                    FirestoreManager.saveUserProfile(profile) { saved, error ->
-                        if (!saved) {
-                            android.util.Log.e("RegisterActivity", "Profile setup failed: $error")
-                        }
-                    }
-                }
-                .addOnFailureListener { error ->
-                    runOnUiThread {
-                        setLoading(false)
-                        Toast.makeText(this, "Registration failed: ${error.localizedMessage}", Toast.LENGTH_LONG).show()
-                    }
-                }
+        FirestoreManager.auth?.signOut()
+        if (LocalAuthManager(this).register(email, password)) {
+            setLoading(false)
+            Toast.makeText(this, "Account created successfully!", Toast.LENGTH_SHORT).show()
+            navigateToWelcome()
         } else {
             setLoading(false)
-            Toast.makeText(this, "Registration service is unavailable. Please try again.", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "An account with this email already exists.", Toast.LENGTH_LONG).show()
         }
     }
 
-    private fun navigateToDashboard() {
-        val intent = Intent(this, MainActivity::class.java).apply {
+    private fun navigateToWelcome() {
+        FirestoreManager.auth?.signOut()
+        val intent = Intent(this, WelcomeActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         }
         startActivity(intent)

@@ -4,6 +4,8 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.text.Editable
+import android.text.TextWatcher
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import com.example.stoveaide.data.FirestoreManager
@@ -67,11 +69,30 @@ class DashboardFragment : Fragment() {
             }
         }
 
+        var updatingMinutesFromDatabase = false
+        binding.tvTimerCount.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = Unit
+
+            override fun afterTextChanged(editable: Editable?) {
+                if (!updatingMinutesFromDatabase) {
+                    editable?.toString()?.toIntOrNull()?.let { minutes ->
+                        FirestoreManager.updateRealtimeMinutes(minutes)
+                    }
+                }
+            }
+        })
+
+        FirestoreManager.listenToRealtimeMinutes(onUpdate = { minutes ->
+            updatingMinutesFromDatabase = true
+            binding.tvTimerCount.setText(minutes.toString())
+            binding.tvTimerCount.setSelection(binding.tvTimerCount.length())
+            binding.stoveGaugeView.progress = (minutes.toFloat() / 20f) * 100f
+            updatingMinutesFromDatabase = false
+        })
+
         // Listen to Firestore IoT Stove Data
         FirestoreManager.listenToStoveData("STOVE-PH-8842") { stove ->
-            binding.stoveGaugeView.progress = (stove.activeMinutes.toFloat() / stove.maxAlertMinutes.toFloat()) * 100f
-            binding.tvTimerCount.text = "${stove.activeMinutes} min"
-            
             if (stove.lpgValveOpen) {
                 binding.tvCard1Sub.text = if (stove.flameDetected) "Flame Active" else "Flame Off"
                 binding.tvCard2Sub.text = "${stove.temperatureCelsius.toInt()}°C • Normal"

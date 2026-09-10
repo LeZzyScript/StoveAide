@@ -244,14 +244,27 @@
             app:layout_constraintStart_toStartOf="@+id/stoveGaugeView"
             app:layout_constraintTop_toTopOf="@+id/stoveGaugeView">
 
-            <TextView
+            <EditText
                 android:id="@+id/tvTimerCount"
-                android:layout_width="wrap_content"
+                android:layout_width="72dp"
                 android:layout_height="wrap_content"
-                android:text="14 min"
+                android:background="@null"
+                android:gravity="center"
+                android:inputType="number"
+                android:maxLength="3"
+                android:selectAllOnFocus="true"
+                android:singleLine="true"
+                android:text="14"
                 android:textColor="@color/brand_teal"
                 android:textSize="28sp"
                 android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="min"
+                android:textColor="@color/brand_teal"
+                android:textSize="13sp" />
 
             <TextView
                 android:id="@+id/tvTimerLabel"

@@ -6,7 +6,6 @@ import android.text.Html
 import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import com.example.stoveaide.data.FirestoreManager
 import com.example.stoveaide.databinding.ActivityForgotPasswordBinding
 
 class ForgotPasswordActivity : AppCompatActivity() {
@@ -42,24 +41,10 @@ class ForgotPasswordActivity : AppCompatActivity() {
             return
         }
 
-        setLoading(true)
-
-        val auth = FirestoreManager.auth
-        if (auth != null) {
-            auth.sendPasswordResetEmail(email)
-                .addOnCompleteListener { task ->
-                setLoading(false)
-                if (task.isSuccessful) {
-                    Toast.makeText(this, "A password reset link was sent to $email.", Toast.LENGTH_LONG).show()
-                    finish()
-                } else {
-                    Toast.makeText(this, "Failed to send reset link: ${task.exception?.message}", Toast.LENGTH_LONG).show()
-                }
-                }
-        } else {
-            setLoading(false)
-            Toast.makeText(this, "Password reset service is unavailable. Please try again.", Toast.LENGTH_LONG).show()
-        }
+        startActivity(Intent(this, ResetPasswordActivity::class.java).apply {
+            putExtra(ResetPasswordActivity.EXTRA_EMAIL, email)
+        })
+        finish()
     }
 
     private fun setLoading(isLoading: Boolean) {

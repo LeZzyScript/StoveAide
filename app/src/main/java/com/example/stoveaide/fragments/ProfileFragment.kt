@@ -9,6 +9,7 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import com.example.stoveaide.WelcomeActivity
 import com.example.stoveaide.data.FirestoreManager
+import com.example.stoveaide.data.LocalAuthManager
 import com.example.stoveaide.databinding.FragmentProfileBinding
 
 class ProfileFragment : Fragment() {
@@ -56,10 +57,12 @@ class ProfileFragment : Fragment() {
 
         binding.btnLogout.setOnClickListener {
             FirestoreManager.auth?.signOut()
+            LocalAuthManager(requireContext()).signOut()
             Toast.makeText(context, "Logged out successfully", Toast.LENGTH_SHORT).show()
-            val intent = Intent(requireActivity(), WelcomeActivity::class.java)
+            val intent = Intent(requireActivity(), WelcomeActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            }
             startActivity(intent)
-            requireActivity().finish()
         }
     }
 

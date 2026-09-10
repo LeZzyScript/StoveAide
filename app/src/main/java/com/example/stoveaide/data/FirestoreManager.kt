@@ -4,16 +4,59 @@ import android.util.Log
 import com.example.stoveaide.models.StoveData
 import com.example.stoveaide.models.UserProfile
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ValueEventListener
 import com.google.firebase.firestore.FirebaseFirestore
 
 object FirestoreManager {
     private const val TAG = "FirestoreManager"
+    private const val REALTIME_DATABASE_URL =
+        "https://stoveaide-default-rtdb.asia-southeast1.firebasedatabase.app"
     
     val auth: FirebaseAuth?
         get() = try { FirebaseAuth.getInstance() } catch (e: Exception) { null }
 
     val firestore: FirebaseFirestore?
         get() = try { FirebaseFirestore.getInstance() } catch (e: Exception) { null }
+
+    private val realtimeDatabase: FirebaseDatabase?
+        get() = try { FirebaseDatabase.getInstance(REALTIME_DATABASE_URL) } catch (e: Exception) { null }
+
+    fun listenToRealtimeMinutes(onUpdate: (Int) -> Unit, onError: (String) -> Unit = {}) {
+        val reference = realtimeDatabase?.getReference("test/data")
+        if (reference == null) {
+            onError("Realtime Database is not initialized.")
+            return
+        }
+
+        reference.addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                snapshot.getValue(Int::class.java)?.let(onUpdate)
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                Log.e(TAG, "Error listening to Realtime Database", error.toException())
+                onError(error.message)
+            }
+        })
+    }
+
+    fun updateRealtimeMinutes(minutes: Int, onResult: (Boolean) -> Unit = {}) {
+        val reference = realtimeDatabase?.getReference("test/data")
+        if (reference == null) {
+            onResult(false)
+            return
+        }
+
+        reference.setValue(minutes)
+            .addOnSuccessListener { onResult(true) }
+            .addOnFailureListener { error ->
+                Log.e(TAG, "Error writing minutes to Realtime Database", error)
+                onResult(false)
+            }
+    }
 
     /**
      * Save user profile to Firestore `users/{uid}` collection

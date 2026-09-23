@@ -54,7 +54,6 @@ class ForgotPasswordActivity : AppCompatActivity() {
                     putExtra(OtpVerificationActivity.EXTRA_PURPOSE, OtpManager.PURPOSE_FORGOT_PASSWORD)
                 }
                 startActivity(intent)
-                finish()
             } else {
                 Toast.makeText(this, "Failed to send reset code: $error", Toast.LENGTH_LONG).show()
             }

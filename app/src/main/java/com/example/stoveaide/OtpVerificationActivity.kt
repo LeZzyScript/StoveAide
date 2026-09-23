@@ -112,12 +112,13 @@ class OtpVerificationActivity : AppCompatActivity() {
         countDownTimer?.cancel()
         countDownTimer = object : CountDownTimer(60000, 1000) {
             override fun onTick(millisUntilFinished: Long) {
-                val seconds = millisUntilFinished / 1000
-                binding.tvResendTimer.text = String.format("Resend code in 00:%02d", seconds)
+                val seconds = (millisUntilFinished / 1000)
+                binding.tvResendTimer.text = String.format("Send another code in 00:%02d", seconds)
             }
 
             override fun onFinish() {
-                binding.tvResendTimer.visibility = View.GONE
+                binding.tvResendTimer.text = "Didn't receive code?"
+                binding.tvResendTimer.visibility = View.VISIBLE
                 binding.btnResendCode.visibility = View.VISIBLE
             }
         }.start()
@@ -169,17 +170,30 @@ class OtpVerificationActivity : AppCompatActivity() {
 
     private fun completeRegistration() {
         val auth = FirestoreManager.auth
+        val nameParts = fullName.trim().split(" ")
+        val firstName = nameParts.firstOrNull() ?: fullName
+        val lastName = if (nameParts.size > 1) nameParts.drop(1).joinToString(" ") else ""
+
         if (auth != null) {
             auth.createUserWithEmailAndPassword(email, password)
                 .addOnCompleteListener { task ->
                     if (task.isSuccessful) {
                         val firebaseUser = task.result?.user
+                        
+                        // Update Firebase Auth displayName
+                        val profileUpdates = com.google.firebase.auth.UserProfileChangeRequest.Builder()
+                            .setDisplayName(fullName)
+                            .build()
+                        firebaseUser?.updateProfile(profileUpdates)
+
                         val userProfile = UserProfile(
                             uid = firebaseUser?.uid ?: "",
+                            firstName = firstName,
+                            lastName = lastName,
                             fullName = fullName,
                             email = email
                         )
-                        FirestoreManager.saveUserProfile(userProfile) { success, _ ->
+                        FirestoreManager.saveUserProfile(userProfile) { _, _ ->
                             setLoading(false)
                             Toast.makeText(this, "Email verified! Welcome to StoveAide!", Toast.LENGTH_SHORT).show()
                             startActivity(Intent(this, MainActivity::class.java))
@@ -192,6 +206,14 @@ class OtpVerificationActivity : AppCompatActivity() {
                 }
         } else {
             // Local Demo Mode
+            val userProfile = UserProfile(
+                uid = "demo_uid",
+                firstName = firstName,
+                lastName = lastName,
+                fullName = fullName,
+                email = email
+            )
+            FirestoreManager.saveUserProfile(userProfile) { _, _ -> }
             setLoading(false)
             Toast.makeText(this, "Email verified! Welcome (Demo Mode)", Toast.LENGTH_SHORT).show()
             startActivity(Intent(this, MainActivity::class.java))

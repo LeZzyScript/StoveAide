@@ -30,4 +30,13 @@
     <color name="rule_valid_bg">#E8F5E9</color>
     <color name="otp_box_bg">#F5F5F7</color>
     <color name="otp_box_stroke">#D2D2D7</color>
+    <color name="led_active_green">#10B981</color>
+    <color name="led_active_glow">#48E59B</color>
+    <color name="led_inactive_gray">#CBD5E1</color>
+    <color name="status_online_bg">#DCFCE7</color>
+    <color name="status_online_text">#15803D</color>
+    <color name="status_offline_bg">#FEE2E2</color>
+    <color name="status_offline_text">#B91C1C</color>
+    <color name="status_warn_bg">#FEF3C7</color>
+    <color name="status_warn_text">#B45309</color>
 </resources>

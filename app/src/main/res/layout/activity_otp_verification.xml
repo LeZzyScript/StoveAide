@@ -201,7 +201,7 @@
             android:id="@+id/tvResendTimer"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Resend code in 00:60"
+            android:text="Send another code in 00:60"
             android:textColor="@color/text_secondary"
             android:textSize="14sp" />
 
@@ -212,8 +212,8 @@
             android:layout_marginStart="6dp"
             android:clickable="true"
             android:focusable="true"
-            android:text="Resend Code"
-            android:textColor="@color/brand_teal"
+            android:text="Send another code"
+            android:textColor="@color/back_btn_text"
             android:textSize="14sp"
             android:textStyle="bold"
             android:visibility="gone" />

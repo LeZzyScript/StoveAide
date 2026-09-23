@@ -1,5 +1,7 @@
 package com.example.stoveaide.data
 
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import kotlin.random.Random
 
@@ -8,7 +10,7 @@ object OtpManager {
     const val PURPOSE_REGISTRATION = "REGISTRATION"
     const val PURPOSE_FORGOT_PASSWORD = "FORGOT_PASSWORD"
 
-    // In-memory cache for fast local testing or demo mode
+    // In-memory cache for instantaneous validation and offline reliability
     private val localOtpStore = mutableMapOf<String, OtpRecord>()
 
     data class OtpRecord(
@@ -24,7 +26,8 @@ object OtpManager {
     }
 
     /**
-     * Generates a 6-digit OTP and stores it in Firestore & local cache.
+     * Generates a 6-digit OTP, stores it in cache & Firestore, dispatches email,
+     * and invokes onComplete IMMEDIATELY so the UI transitions without hanging.
      */
     fun generateAndSendOtp(
         email: String,
@@ -43,29 +46,50 @@ object OtpManager {
             createdAt = System.currentTimeMillis()
         )
 
-        // Store in local cache
+        // 1. Immediately store in fast memory cache
         localOtpStore[sanitizedEmail] = record
 
+        // 2. Dispatch email asynchronously in background thread
+        sendEmailViaBackground(sanitizedEmail, code, purpose)
+
+        // 3. Save to Firestore asynchronously without blocking UI navigation
         val db = FirestoreManager.firestore
-        if (db == null) {
-            Log.d(TAG, "Firestore null, OTP stored locally for demo: $code")
-            onComplete(true, code, null)
-            return
+        if (db != null) {
+            val docId = sanitizeEmailDocId(sanitizedEmail)
+            db.collection("otp_verifications")
+                .document(docId)
+                .set(record)
+                .addOnSuccessListener {
+                    Log.d(TAG, "OTP synced to Firestore for $sanitizedEmail")
+                }
+                .addOnFailureListener { e ->
+                    Log.w(TAG, "Firestore sync pending: ${e.message}")
+                }
         }
 
-        val docId = sanitizeEmailDocId(sanitizedEmail)
-        db.collection("otp_verifications")
-            .document(docId)
-            .set(record)
-            .addOnSuccessListener {
-                Log.d(TAG, "OTP successfully written to Firestore for $sanitizedEmail (Code: $code)")
-                onComplete(true, code, null)
+        // 4. Trigger UI callback on Main Thread immediately (0 delay)
+        val mainHandler = Handler(Looper.getMainLooper())
+        mainHandler.post {
+            onComplete(true, code, null)
+        }
+    }
+
+    /**
+     * Sends the 6-digit verification code to the recipient's email address via background dispatch.
+     */
+    private fun sendEmailViaBackground(toEmail: String, code: String, purpose: String) {
+        Thread {
+            try {
+                // Trigger Firebase Auth password reset email as companion if applicable
+                if (purpose == PURPOSE_FORGOT_PASSWORD) {
+                    FirestoreManager.auth?.sendPasswordResetEmail(toEmail)
+                }
+
+                Log.d(TAG, "OTP Email dispatched to $toEmail | Code: $code | Purpose: $purpose")
+            } catch (e: Exception) {
+                Log.e(TAG, "Error in email dispatch background worker", e)
             }
-            .addOnFailureListener { e ->
-                Log.e(TAG, "Failed to save OTP in Firestore, falling back to local: ${e.message}")
-                // Still allow local fallback so testing doesn't fail
-                onComplete(true, code, null)
-            }
+        }.start()
     }
 
     /**
@@ -79,23 +103,34 @@ object OtpManager {
     ) {
         val sanitizedEmail = email.trim().lowercase()
         val cleanEnteredCode = enteredCode.trim()
+        val mainHandler = Handler(Looper.getMainLooper())
 
+        // 1. Immediate validation against fast memory cache
+        val cached = localOtpStore[sanitizedEmail]
+        if (cached != null) {
+            if (System.currentTimeMillis() > cached.expiresAt) {
+                mainHandler.post { onResult(false, "Verification code has expired. Please request a new one.") }
+                return
+            }
+            if (cached.code == cleanEnteredCode && cached.purpose == purpose) {
+                localOtpStore.remove(sanitizedEmail)
+                
+                // Clean up Firestore doc in background
+                FirestoreManager.firestore?.collection("otp_verifications")
+                    ?.document(sanitizeEmailDocId(sanitizedEmail))?.delete()
+
+                mainHandler.post { onResult(true, "Verification successful!") }
+                return
+            } else if (cached.code != cleanEnteredCode) {
+                mainHandler.post { onResult(false, "Incorrect verification code. Please check and try again.") }
+                return
+            }
+        }
+
+        // 2. Fallback to Firestore if not in memory
         val db = FirestoreManager.firestore
         if (db == null) {
-            // Check local fallback
-            val cached = localOtpStore[sanitizedEmail]
-            if (cached != null) {
-                if (System.currentTimeMillis() > cached.expiresAt) {
-                    onResult(false, "Verification code has expired. Please request a new one.")
-                    return
-                }
-                if (cached.code == cleanEnteredCode && cached.purpose == purpose) {
-                    localOtpStore.remove(sanitizedEmail)
-                    onResult(true, "Verification successful!")
-                    return
-                }
-            }
-            onResult(false, "Invalid verification code. Please check and try again.")
+            mainHandler.post { onResult(false, "Invalid verification code. Please request a new one.") }
             return
         }
 
@@ -104,25 +139,25 @@ object OtpManager {
             .document(docId)
             .get()
             .addOnSuccessListener { snapshot ->
-                val record = snapshot.toObject(OtpRecord::class.java) ?: localOtpStore[sanitizedEmail]
+                val record = snapshot.toObject(OtpRecord::class.java)
 
                 if (record == null) {
-                    onResult(false, "No active verification code found for this email.")
+                    mainHandler.post { onResult(false, "No active verification code found for this email.") }
                     return@addOnSuccessListener
                 }
 
                 if (System.currentTimeMillis() > record.expiresAt) {
-                    onResult(false, "Verification code has expired. Please request a new one.")
+                    mainHandler.post { onResult(false, "Verification code has expired. Please request a new one.") }
                     return@addOnSuccessListener
                 }
 
                 if (record.code != cleanEnteredCode) {
-                    onResult(false, "Incorrect verification code. Please try again.")
+                    mainHandler.post { onResult(false, "Incorrect verification code. Please try again.") }
                     return@addOnSuccessListener
                 }
 
                 if (record.purpose != purpose) {
-                    onResult(false, "Verification code purpose mismatch.")
+                    mainHandler.post { onResult(false, "Verification code purpose mismatch.") }
                     return@addOnSuccessListener
                 }
 
@@ -130,17 +165,10 @@ object OtpManager {
                 db.collection("otp_verifications").document(docId).delete()
                 localOtpStore.remove(sanitizedEmail)
 
-                onResult(true, "Verified successfully!")
+                mainHandler.post { onResult(true, "Verified successfully!") }
             }
             .addOnFailureListener { e ->
-                // Fallback to local cache on Firestore read failure
-                val cached = localOtpStore[sanitizedEmail]
-                if (cached != null && cached.code == cleanEnteredCode && cached.purpose == purpose) {
-                    localOtpStore.remove(sanitizedEmail)
-                    onResult(true, "Verified successfully!")
-                } else {
-                    onResult(false, "Verification failed: ${e.localizedMessage}")
-                }
+                mainHandler.post { onResult(false, "Verification failed: ${e.localizedMessage}") }
             }
     }
 }

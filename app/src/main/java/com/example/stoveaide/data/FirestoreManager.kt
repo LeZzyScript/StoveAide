@@ -40,12 +40,37 @@ object FirestoreManager {
     }
 
     /**
-     * Fetch user profile from Firestore `users/{uid}`
+     * Fetch user profile from Firestore `users/{uid}` with intelligent Auth fallback
      */
     fun getUserProfile(uid: String, onResult: (UserProfile?) -> Unit) {
+        val currentUser = auth?.currentUser
+        val email = currentUser?.email ?: ""
+        val displayName = currentUser?.displayName ?: ""
+
+        val nameParts = if (displayName.isNotBlank()) displayName.trim().split(" ") else emptyList()
+        val derivedFirstName = when {
+            nameParts.isNotEmpty() -> nameParts.first()
+            email.isNotBlank() -> email.substringBefore("@").replace(Regex("[0-9_.]"), "").replaceFirstChar { it.uppercase() }.ifBlank { "User" }
+            else -> "User"
+        }
+        val derivedLastName = if (nameParts.size > 1) nameParts.drop(1).joinToString(" ") else ""
+        val derivedFullName = when {
+            displayName.isNotBlank() -> displayName
+            email.isNotBlank() -> email.substringBefore("@")
+            else -> "User"
+        }
+
+        val fallbackProfile = UserProfile(
+            uid = uid,
+            firstName = derivedFirstName,
+            lastName = derivedLastName,
+            fullName = derivedFullName,
+            email = email
+        )
+
         val db = firestore
         if (db == null) {
-            onResult(UserProfile(uid = uid, firstName = "Juan", lastName = "Dela Cruz", fullName = "Juan Dela Cruz", email = "juan@example.com"))
+            onResult(fallbackProfile)
             return
         }
 
@@ -54,10 +79,14 @@ object FirestoreManager {
             .get()
             .addOnSuccessListener { snapshot ->
                 val profile = snapshot.toObject(UserProfile::class.java)
-                onResult(profile ?: UserProfile(uid = uid, firstName = "Juan", lastName = "Dela Cruz", fullName = "Juan Dela Cruz"))
+                if (profile != null && (profile.fullName.isNotBlank() || profile.firstName.isNotBlank())) {
+                    onResult(profile)
+                } else {
+                    onResult(fallbackProfile)
+                }
             }
             .addOnFailureListener {
-                onResult(UserProfile(uid = uid, firstName = "Juan", lastName = "Dela Cruz", fullName = "Juan Dela Cruz"))
+                onResult(fallbackProfile)
             }
     }
 
@@ -107,6 +136,32 @@ object FirestoreManager {
                     "status" to "NORMAL"
                 )
             )
+    }
+
+    /**
+     * Write a user-inputted active minutes value to Firestore as test data.
+     * Used to verify that app → Firebase connectivity is working correctly.
+     */
+    fun setActiveMinutes(stoveId: String, minutes: Int, onResult: (Boolean) -> Unit) {
+        val db = firestore
+        if (db == null) {
+            onResult(false)
+            return
+        }
+        db.collection("stoves").document(stoveId)
+            .update(mapOf("activeMinutes" to minutes))
+            .addOnSuccessListener {
+                Log.d(TAG, "activeMinutes set to $minutes via user input")
+                onResult(true)
+            }
+            .addOnFailureListener { e ->
+                Log.e(TAG, "Failed to set activeMinutes", e)
+                // If doc doesn't exist yet, set it instead of update
+                db.collection("stoves").document(stoveId)
+                    .set(mapOf("activeMinutes" to minutes, "stoveId" to stoveId))
+                    .addOnSuccessListener { onResult(true) }
+                    .addOnFailureListener { onResult(false) }
+            }
     }
 
     /**

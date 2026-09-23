@@ -6,7 +6,6 @@ import android.text.Html
 import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import com.example.stoveaide.data.OtpManager
 import com.example.stoveaide.databinding.ActivityForgotPasswordBinding
 
 class ForgotPasswordActivity : AppCompatActivity() {

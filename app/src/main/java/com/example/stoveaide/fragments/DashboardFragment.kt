@@ -1,13 +1,11 @@
 package com.example.stoveaide.fragments
 
 import android.os.Bundle
-import android.text.InputType
+import android.view.inputmethod.EditorInfo
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.EditText
 import android.widget.Toast
-import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import com.example.stoveaide.data.FirestoreManager
 import com.example.stoveaide.databinding.FragmentDashboardBinding
@@ -73,7 +71,6 @@ class DashboardFragment : Fragment() {
         // Listen to Firestore IoT Stove Data
         FirestoreManager.listenToStoveData("STOVE-PH-8842") { stove ->
             binding.stoveGaugeView.progress = (stove.activeMinutes.toFloat() / stove.maxAlertMinutes.toFloat()) * 100f
-            binding.tvTimerCount.text = "${stove.activeMinutes} min"
             
             if (stove.lpgValveOpen) {
                 binding.tvCard1Sub.text = if (stove.flameDetected) "Flame Active" else "Flame Off"
@@ -87,6 +84,12 @@ class DashboardFragment : Fragment() {
                 binding.tvAlertDesc.text = "Safety solenoid valve is CLOSED. Gas supply isolated."
             }
         }
+
+        FirestoreManager.listenToRealtimeMinutes(onUpdate = { minutes ->
+            binding.tvTimerCount.setText(minutes.toString())
+            binding.tvTimerCount.setSelection(binding.tvTimerCount.text.length)
+            binding.tvTimerLabel.text = "From Firebase test data"
+        })
 
         // Button Listeners
         binding.btnCheckIn.setOnClickListener {
@@ -104,53 +107,39 @@ class DashboardFragment : Fragment() {
             startActivity(intent)
         }
 
-        // Gauge center tap → open timer input dialog (test data: writes activeMinutes to Firebase)
-        binding.layoutGaugeCenter.setOnClickListener {
-            showTimerInputDialog()
+        binding.tvTimerCount.setOnEditorActionListener { _, actionId, event ->
+            val submitted = actionId == EditorInfo.IME_ACTION_DONE ||
+                (event?.keyCode == android.view.KeyEvent.KEYCODE_ENTER)
+            if (submitted) {
+                syncTimerInput()
+            }
+            submitted
+        }
+
+        binding.tvTimerCount.setOnFocusChangeListener { _, hasFocus ->
+            if (!hasFocus) {
+                syncTimerInput()
+            }
         }
     }
 
-    /**
-     * Shows an input dialog to set the stove active timer.
-     * The entered value is written to Firestore as test data to verify
-     * app → Firebase connectivity is working correctly.
-     */
-    private fun showTimerInputDialog() {
-        val editText = EditText(requireContext()).apply {
-            hint = "Enter minutes (e.g. 14)"
-            inputType = InputType.TYPE_CLASS_NUMBER
-            setPadding(48, 32, 48, 16)
+    private fun syncTimerInput() {
+        val minutes = binding.tvTimerCount.text.toString().trim().toIntOrNull()
+        if (minutes == null || minutes < 0) {
+            Toast.makeText(context, "Please enter a valid number of minutes.", Toast.LENGTH_SHORT).show()
+            return
         }
 
-        AlertDialog.Builder(requireContext())
-            .setTitle("Set Timer")
-            .setMessage("Enter stove active minutes to send as test data to Firebase:")
-            .setView(editText)
-            .setPositiveButton("Set") { _, _ ->
-                val input = editText.text.toString().trim()
-                val minutes = input.toIntOrNull()
-                if (minutes == null || minutes < 0) {
-                    Toast.makeText(context, "Please enter a valid number of minutes.", Toast.LENGTH_SHORT).show()
-                    return@setPositiveButton
-                }
-
-                // Optimistic UI update
-                binding.tvTimerCount.text = "$minutes min"
-                binding.tvTimerLabel.text = "Syncing to Firebase..."
-
-                // Write to Firestore as test data
-                FirestoreManager.setActiveMinutes("STOVE-PH-8842", minutes) { success ->
-                    if (success) {
-                        binding.tvTimerLabel.text = "✓ Synced to Firebase"
-                        Toast.makeText(context, "✓ Timer set to $minutes min — Firebase updated!", Toast.LENGTH_SHORT).show()
-                    } else {
-                        binding.tvTimerLabel.text = "⚠ Sync failed"
-                        Toast.makeText(context, "Failed to write to Firebase. Check connection.", Toast.LENGTH_LONG).show()
-                    }
-                }
+        binding.tvTimerLabel.text = "Syncing to Firebase..."
+        FirestoreManager.updateRealtimeMinutes(minutes) { success ->
+            if (success) {
+                binding.tvTimerLabel.text = "From Firebase test data"
+                Toast.makeText(context, "Timer set to $minutes min in Firebase.", Toast.LENGTH_SHORT).show()
+            } else {
+                binding.tvTimerLabel.text = "Sync failed"
+                Toast.makeText(context, "Failed to write test data to Firebase.", Toast.LENGTH_LONG).show()
             }
-            .setNegativeButton("Cancel", null)
-            .show()
+        }
     }
 
     override fun onDestroyView() {

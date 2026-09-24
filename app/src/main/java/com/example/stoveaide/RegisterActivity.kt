@@ -11,8 +11,9 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
-import com.example.stoveaide.data.OtpManager
+import com.example.stoveaide.data.FirestoreManager
 import com.example.stoveaide.databinding.ActivityRegisterBinding
+import com.example.stoveaide.models.UserProfile
 import com.example.stoveaide.utils.PasswordValidationResult
 import com.example.stoveaide.utils.PasswordValidator
 
@@ -107,23 +108,50 @@ class RegisterActivity : AppCompatActivity() {
         }
 
         setLoading(true)
-
-        // Generate and send 6-digit OTP to user's email
-        OtpManager.generateAndSendOtp(email, OtpManager.PURPOSE_REGISTRATION) { success, code, error ->
+        val auth = FirestoreManager.auth
+        if (auth == null) {
             setLoading(false)
-            if (success) {
-                Toast.makeText(this, "6-digit code sent to $email! (Code: $code)", Toast.LENGTH_LONG).show()
-                val intent = Intent(this, OtpVerificationActivity::class.java).apply {
-                    putExtra(OtpVerificationActivity.EXTRA_EMAIL, email)
-                    putExtra(OtpVerificationActivity.EXTRA_PURPOSE, OtpManager.PURPOSE_REGISTRATION)
-                    putExtra(OtpVerificationActivity.EXTRA_FULL_NAME, fullName)
-                    putExtra(OtpVerificationActivity.EXTRA_PASSWORD, password)
-                }
-                startActivity(intent)
-            } else {
-                Toast.makeText(this, "Failed to send verification code: $error", Toast.LENGTH_LONG).show()
-            }
+            Toast.makeText(this, "Firebase Authentication is unavailable.", Toast.LENGTH_LONG).show()
+            return
         }
+
+        auth.createUserWithEmailAndPassword(email, password)
+            .addOnCompleteListener { task ->
+                if (!task.isSuccessful) {
+                    setLoading(false)
+                    Toast.makeText(
+                        this,
+                        task.exception?.localizedMessage ?: "Registration failed.",
+                        Toast.LENGTH_LONG
+                    ).show()
+                    return@addOnCompleteListener
+                }
+
+                val firebaseUser = task.result?.user
+                val nameParts = fullName.split(" ")
+                val profile = UserProfile(
+                    uid = firebaseUser?.uid.orEmpty(),
+                    firstName = nameParts.firstOrNull().orEmpty(),
+                    lastName = nameParts.drop(1).joinToString(" "),
+                    fullName = fullName,
+                    email = email
+                )
+                firebaseUser?.updateProfile(
+                    com.google.firebase.auth.UserProfileChangeRequest.Builder()
+                        .setDisplayName(fullName)
+                        .build()
+                )
+                FirestoreManager.saveUserProfile(profile) { saved, error ->
+                    setLoading(false)
+                    if (!saved) {
+                        Toast.makeText(this, "Account created, but profile sync failed: $error", Toast.LENGTH_LONG).show()
+                    } else {
+                        Toast.makeText(this, "Welcome to StoveAide!", Toast.LENGTH_SHORT).show()
+                    }
+                    startActivity(Intent(this, MainActivity::class.java))
+                    finishAffinity()
+                }
+            }
     }
 
     private fun setLoading(isLoading: Boolean) {

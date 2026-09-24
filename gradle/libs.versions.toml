@@ -25,7 +25,6 @@ firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.r
 firebase-database = { group = "com.google.firebase", name = "firebase-database-ktx" }
 firebase-firestore = { group = "com.google.firebase", name = "firebase-firestore-ktx" }
 firebase-auth = { group = "com.google.firebase", name = "firebase-auth-ktx" }
-firebase-database = { group = "com.google.firebase", name = "firebase-database-ktx" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

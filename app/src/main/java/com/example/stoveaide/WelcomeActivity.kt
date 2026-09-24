@@ -4,7 +4,6 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import com.example.stoveaide.data.FirestoreManager
-import com.example.stoveaide.data.LocalAuthManager
 import com.example.stoveaide.databinding.ActivityWelcomeBinding
 
 class WelcomeActivity : AppCompatActivity() {
@@ -16,8 +15,7 @@ class WelcomeActivity : AppCompatActivity() {
         binding = ActivityWelcomeBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Check if user is already signed in via Firebase Auth
-        if (LocalAuthManager(this).isSignedIn()) {
+        if (FirestoreManager.auth?.currentUser != null) {
             startActivity(Intent(this, MainActivity::class.java))
             finish()
             return

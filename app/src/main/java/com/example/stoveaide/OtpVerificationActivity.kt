@@ -205,19 +205,8 @@ class OtpVerificationActivity : AppCompatActivity() {
                     }
                 }
         } else {
-            // Local Demo Mode
-            val userProfile = UserProfile(
-                uid = "demo_uid",
-                firstName = firstName,
-                lastName = lastName,
-                fullName = fullName,
-                email = email
-            )
-            FirestoreManager.saveUserProfile(userProfile) { _, _ -> }
             setLoading(false)
-            Toast.makeText(this, "Email verified! Welcome (Demo Mode)", Toast.LENGTH_SHORT).show()
-            startActivity(Intent(this, MainActivity::class.java))
-            finishAffinity()
+            Toast.makeText(this, "Firebase Authentication is unavailable.", Toast.LENGTH_LONG).show()
         }
     }
 

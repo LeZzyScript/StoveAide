@@ -7,7 +7,6 @@ import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.stoveaide.data.FirestoreManager
-import com.example.stoveaide.data.LocalAuthManager
 import com.example.stoveaide.databinding.ActivityLoginBinding
 
 class LoginActivity : AppCompatActivity() {
@@ -55,16 +54,28 @@ class LoginActivity : AppCompatActivity() {
         }
 
         setLoading(true)
-        FirestoreManager.auth?.signOut()
-        if (LocalAuthManager(this).authenticate(email, password)) {
+        val auth = FirestoreManager.auth
+        if (auth == null) {
             setLoading(false)
-            Toast.makeText(this, "Welcome back to StoveAide!", Toast.LENGTH_SHORT).show()
-            startActivity(Intent(this, MainActivity::class.java))
-            finishAffinity()
-        } else {
-            setLoading(false)
-            Toast.makeText(this, "Login failed. Check your email and password.", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "Firebase Authentication is unavailable.", Toast.LENGTH_LONG).show()
+            return
         }
+
+        auth.signInWithEmailAndPassword(email, password)
+            .addOnCompleteListener { task ->
+                setLoading(false)
+                if (task.isSuccessful) {
+                    Toast.makeText(this, "Welcome back to StoveAide!", Toast.LENGTH_SHORT).show()
+                    startActivity(Intent(this, MainActivity::class.java))
+                    finishAffinity()
+                } else {
+                    Toast.makeText(
+                        this,
+                        task.exception?.localizedMessage ?: "Login failed. Check your email and password.",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            }
     }
 
     private fun setLoading(isLoading: Boolean) {

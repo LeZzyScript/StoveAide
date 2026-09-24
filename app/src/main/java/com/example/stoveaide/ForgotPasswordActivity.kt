@@ -6,6 +6,7 @@ import android.text.Html
 import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.example.stoveaide.data.FirestoreManager
 import com.example.stoveaide.databinding.ActivityForgotPasswordBinding
 
 class ForgotPasswordActivity : AppCompatActivity() {
@@ -42,21 +43,27 @@ class ForgotPasswordActivity : AppCompatActivity() {
         }
 
         setLoading(true)
-
-        // Generate and dispatch 6-digit OTP code for password reset
-        OtpManager.generateAndSendOtp(email, OtpManager.PURPOSE_FORGOT_PASSWORD) { success, code, error ->
+        val auth = FirestoreManager.auth
+        if (auth == null) {
             setLoading(false)
-            if (success) {
-                Toast.makeText(this, "6-digit reset code sent to $email! (Code: $code)", Toast.LENGTH_LONG).show()
-                val intent = Intent(this, OtpVerificationActivity::class.java).apply {
-                    putExtra(OtpVerificationActivity.EXTRA_EMAIL, email)
-                    putExtra(OtpVerificationActivity.EXTRA_PURPOSE, OtpManager.PURPOSE_FORGOT_PASSWORD)
-                }
-                startActivity(intent)
-            } else {
-                Toast.makeText(this, "Failed to send reset code: $error", Toast.LENGTH_LONG).show()
-            }
+            Toast.makeText(this, "Firebase Authentication is unavailable.", Toast.LENGTH_LONG).show()
+            return
         }
+
+        auth.sendPasswordResetEmail(email)
+            .addOnCompleteListener { task ->
+                setLoading(false)
+                if (task.isSuccessful) {
+                    Toast.makeText(this, "Password reset email sent to $email.", Toast.LENGTH_LONG).show()
+                    finish()
+                } else {
+                    Toast.makeText(
+                        this,
+                        task.exception?.localizedMessage ?: "Unable to send password reset email.",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            }
     }
 
     private fun setLoading(isLoading: Boolean) {

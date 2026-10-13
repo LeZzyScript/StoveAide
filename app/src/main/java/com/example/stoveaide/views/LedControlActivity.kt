@@ -7,7 +7,6 @@ import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
-import com.example.stoveaide.LoginActivity
 import com.example.stoveaide.R
 import com.example.stoveaide.data.repository.LedRepositoryImpl
 import com.example.stoveaide.databinding.ActivityLedControlBinding

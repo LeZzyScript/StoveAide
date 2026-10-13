@@ -1,134 +1,126 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/bg_dashboard_cream"
-    android:padding="20dp">
+    android:fillViewport="true">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
+        android:paddingTop="28dp"
         android:paddingBottom="100dp">
 
+        <!-- Title Header -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Stove Activity &amp; Logs"
+            android:layout_marginHorizontal="20dp"
+            android:fontFamily="serif"
+            android:text="Stove Usage Calendar"
             android:textColor="@color/text_primary"
-            android:textSize="24sp"
+            android:textSize="22sp"
             android:textStyle="bold" />
 
+        <!-- Header Underline Divider -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginHorizontal="20dp"
+            android:layout_marginTop="12dp"
+            android:layout_marginBottom="16dp"
+            android:background="#668E8E93" />
+
+        <!-- Section: Today -->
         <TextView
+            android:id="@+id/tvSectionToday"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:text="Real-time event log recorded via Firestore"
-            android:textColor="@color/text_muted"
-            android:textSize="14sp" />
+            android:layout_marginHorizontal="20dp"
+            android:layout_marginBottom="12dp"
+            android:fontFamily="serif"
+            android:text="Today"
+            android:textColor="@color/text_primary"
+            android:textSize="17sp"
+            android:textStyle="normal" />
 
-        <!-- Log Item 1 -->
         <LinearLayout
+            android:id="@+id/containerTodayLogs"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:orientation="vertical" />
+
+        <!-- Section Divider -->
+        <View
+            android:id="@+id/dividerSections"
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginHorizontal="20dp"
+            android:layout_marginTop="12dp"
+            android:layout_marginBottom="16dp"
+            android:background="#668E8E93" />
+
+        <!-- Section: Last Week -->
+        <TextView
+            android:id="@+id/tvSectionLastWeek"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="20dp"
+            android:layout_marginBottom="12dp"
+            android:fontFamily="serif"
+            android:text="Last Week"
+            android:textColor="@color/text_primary"
+            android:textSize="17sp"
+            android:textStyle="normal" />
+
+        <LinearLayout
+            android:id="@+id/containerLastWeekLogs"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical" />
+
+        <!-- Empty State View -->
+        <LinearLayout
+            android:id="@+id/layoutEmptyHistory"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="20dp"
             android:layout_marginTop="20dp"
             android:background="@drawable/bg_card_white"
+            android:gravity="center"
             android:orientation="vertical"
-            android:padding="16dp">
+            android:padding="28dp"
+            android:visibility="gone">
+
+            <ImageView
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:src="@drawable/ic_calendar" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Stove Active - Unattended Warning"
-                android:textColor="@color/brand_terracotta"
-                android:textSize="15sp"
+                android:layout_marginTop="14dp"
+                android:fontFamily="serif"
+                android:text="No Stove Activity Yet"
+                android:textColor="@color/text_primary"
+                android:textSize="17sp"
                 android:textStyle="bold" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:text="Stove on for 14 minutes without motion check-in."
-                android:textColor="@color/text_primary"
-                android:textSize="13sp" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:text="Today, 8:42 PM • Living Room Sensor"
+                android:gravity="center"
+                android:lineSpacingExtra="3dp"
+                android:text="Welcome to StoveAide! Your stove cooking sessions will appear here as soon as they are logged via the web simulator or sensors."
                 android:textColor="@color/text_muted"
-                android:textSize="11sp" />
-        </LinearLayout>
-
-        <!-- Log Item 2 -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:background="@drawable/bg_card_white"
-            android:orientation="vertical"
-            android:padding="16dp">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="LPG Gas Leak Check - Passed"
-                android:textColor="@color/brand_teal"
-                android:textSize="15sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:text="Air quality normal (0 PPM LPG gas detected)."
-                android:textColor="@color/text_primary"
                 android:textSize="13sp" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="Today, 7:15 PM • Kitchen Guard"
-                android:textColor="@color/text_muted"
-                android:textSize="11sp" />
-        </LinearLayout>
-
-        <!-- Log Item 3 -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:background="@drawable/bg_card_white"
-            android:orientation="vertical"
-            android:padding="16dp">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Auto LPG Shutoff Valve Test"
-                android:textColor="@color/text_primary"
-                android:textSize="15sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:text="Solenoid valve responsive and connected."
-                android:textColor="@color/text_primary"
-                android:textSize="13sp" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="Yesterday, 10:30 AM • Self-Diagnosis"
-                android:textColor="@color/text_muted"
-                android:textSize="11sp" />
         </LinearLayout>
 
     </LinearLayout>
+
 </androidx.core.widget.NestedScrollView>

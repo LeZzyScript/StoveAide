@@ -38,6 +38,9 @@ class LocalAuthManager(context: Context) {
 
     fun isSignedIn(): Boolean = preferences.getString(CURRENT_EMAIL, null) != null
 
+    fun hasAccount(email: String): Boolean =
+        preferences.contains(passwordKey(email.trim().lowercase()))
+
     private fun passwordKey(email: String): String = "password_$email"
 
     private fun hash(value: String): String {

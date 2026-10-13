@@ -39,4 +39,18 @@
     <color name="status_offline_text">#B91C1C</color>
     <color name="status_warn_bg">#FEF3C7</color>
     <color name="status_warn_text">#B45309</color>
+    
+    <!-- Stove Usage Calendar & Day's Usage Colors -->
+    <color name="gold_border">#C59B27</color>
+    <color name="gold_border_light">#E0BA55</color>
+    <color name="status_safe_green">#2ECC71</color>
+    <color name="status_normal_blue">#38A1FF</color>
+    <color name="status_dangerous_red">#FF4D4D</color>
+    <color name="bar_track_dark">#2C2C2E</color>
+    <color name="bar_cyan">#38BDF8</color>
+    <color name="bar_teal">#2DD4BF</color>
+    <color name="bar_green">#4ADE80</color>
+    <color name="thumb_knob">#D1D5DB</color>
+    <color name="thumb_knob_stroke">#9CA3AF</color>
+    <color name="divider_subtle">#E2DDD5</color>
 </resources>

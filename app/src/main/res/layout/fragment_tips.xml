@@ -3,110 +3,81 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/bg_dashboard_cream"
-    android:padding="20dp">
+    android:fillViewport="true">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
+        android:paddingTop="28dp"
         android:paddingBottom="100dp">
 
+        <!-- Title Header -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Stove &amp; LPG Safety Guide"
+            android:layout_marginHorizontal="20dp"
+            android:fontFamily="serif"
+            android:text="Notifications"
             android:textColor="@color/text_primary"
-            android:textSize="24sp"
+            android:textSize="22sp"
             android:textStyle="bold" />
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:text="Fire prevention guidelines for PH households"
-            android:textColor="@color/text_muted"
-            android:textSize="14sp" />
+        <!-- Header Underline Divider -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginHorizontal="20dp"
+            android:layout_marginTop="12dp"
+            android:layout_marginBottom="16dp"
+            android:background="#668E8E93" />
 
-        <!-- Tip 1 -->
+        <!-- Container for Notification Cards -->
         <LinearLayout
+            android:id="@+id/containerNotifications"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:orientation="vertical" />
+
+        <!-- Empty State View -->
+        <LinearLayout
+            android:id="@+id/layoutEmptyNotifications"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="20dp"
             android:layout_marginTop="20dp"
             android:background="@drawable/bg_card_white"
+            android:gravity="center"
             android:orientation="vertical"
-            android:padding="16dp">
+            android:padding="28dp"
+            android:visibility="gone">
+
+            <ImageView
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:src="@drawable/ic_shield" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="1. Gas Leak Response Protocol"
-                android:textColor="@color/brand_terracotta"
-                android:textSize="16sp"
+                android:layout_marginTop="14dp"
+                android:fontFamily="serif"
+                android:text="No Safety Alerts Yet"
+                android:textColor="@color/text_primary"
+                android:textSize="17sp"
                 android:textStyle="bold" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
+                android:layout_marginTop="8dp"
+                android:gravity="center"
                 android:lineSpacingExtra="3dp"
-                android:text="If StoveAide detects LPG gas or you smell gas: \n• DO NOT turn on electrical switches or light matches.\n• Open windows immediately for ventilation.\n• Close the LPG cylinder regulator valve.\n• Use StoveAide Emergency Cutoff."
-                android:textColor="@color/text_primary"
-                android:textSize="13sp" />
-        </LinearLayout>
-
-        <!-- Tip 2 -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:background="@drawable/bg_card_white"
-            android:orientation="vertical"
-            android:padding="16dp">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="2. Unattended Cooking Prevention"
-                android:textColor="@color/brand_teal"
-                android:textSize="16sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:lineSpacingExtra="3dp"
-                android:text="Unattended stove cooking is the #1 cause of residential fires in the Philippines. Always check in on boiling liquids or deep frying every 10–15 minutes."
-                android:textColor="@color/text_primary"
-                android:textSize="13sp" />
-        </LinearLayout>
-
-        <!-- Tip 3 Emergency Hotline -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:background="@drawable/bg_card_white"
-            android:orientation="vertical"
-            android:padding="16dp">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="3. Bureau of Fire Protection (BFP) Hotline"
-                android:textColor="@color/text_primary"
-                android:textSize="16sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:lineSpacingExtra="3dp"
-                android:text="Emergency Hotline: 911 / (02) 8426-0219\nKeep emergency contacts saved near your kitchen."
-                android:textColor="@color/text_primary"
+                android:text="Your stove is safe and clear! High heat spikes, gas leaks, and unattended timer reminders will show up here."
+                android:textColor="@color/text_muted"
                 android:textSize="13sp" />
         </LinearLayout>
 
     </LinearLayout>
+
 </androidx.core.widget.NestedScrollView>

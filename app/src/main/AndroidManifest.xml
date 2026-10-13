@@ -5,6 +5,7 @@
     <!-- Internet & Network State Permissions for Firebase Cloud Firestore & Auth -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
         android:allowBackup="true"
@@ -19,7 +20,7 @@
 
         <!-- Launcher Activity: WelcomeActivity -->
         <activity
-            android:name=".WelcomeActivity"
+            android:name=".views.WelcomeActivity"
             android:exported="true"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
@@ -29,27 +30,36 @@
         </activity>
 
         <activity
-            android:name=".RegisterActivity"
+            android:name=".views.RegisterActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
 
         <activity
-            android:name=".ForgotPasswordActivity"
+            android:name=".views.OtpVerificationActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
 
         <activity
-            android:name=".ResetPasswordActivity"
+            android:name=".views.ForgotPasswordActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
 
         <activity
-            android:name=".LoginActivity"
+            android:name=".views.ResetPasswordActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
 
         <activity
-            android:name=".MainActivity"
+            android:name=".views.LoginActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
+            android:name=".views.MainActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".views.DaysUsageActivity"
             android:exported="false" />
 
         <activity

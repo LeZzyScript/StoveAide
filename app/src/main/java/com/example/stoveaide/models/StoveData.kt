@@ -2,12 +2,12 @@ package com.example.stoveaide.models
 
 data class StoveData(
     val stoveId: String = "STOVE-PH-8842",
-    val status: String = "ACTIVE", // ACTIVE, NORMAL, WARNING, EMERGENCY
-    val flameDetected: Boolean = true,
-    val temperatureCelsius: Float = 38f,
+    val status: String = "STANDBY", // STANDBY, NORMAL, SAFE, DANGEROUS, EMERGENCY_SHUTOFF
+    val flameDetected: Boolean = false,
+    val temperatureCelsius: Float = 0f,
     val gasLevelPpm: Int = 0,
-    val activeMinutes: Int = 14,
+    val activeMinutes: Int = 0,
     val maxAlertMinutes: Int = 20,
-    val lpgValveOpen: Boolean = true,
-    val lastCheckInTimestamp: Long = System.currentTimeMillis()
+    val lpgValveOpen: Boolean = false,
+    val lastCheckInTimestamp: Long = 0L
 )

@@ -7,7 +7,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
-import com.example.stoveaide.WelcomeActivity
+import com.example.stoveaide.views.WelcomeActivity
 import com.example.stoveaide.data.FirestoreManager
 import com.example.stoveaide.data.LocalAuthManager
 import com.example.stoveaide.databinding.FragmentProfileBinding
@@ -31,8 +31,9 @@ class ProfileFragment : Fragment() {
 
         val currentUser = FirestoreManager.auth?.currentUser
         if (currentUser != null) {
-            binding.tvUserEmail.text = currentUser.email ?: "juan@example.com"
+            binding.tvUserEmail.text = currentUser.email ?: ""
             FirestoreManager.getUserProfile(currentUser.uid) { profile ->
+                if (_binding == null) return@getUserProfile
                 if (profile != null) {
                     binding.tvUserName.text = profile.getDisplayName()
                     binding.tvStoveDeviceId.text = profile.stoveDeviceId
@@ -56,13 +57,24 @@ class ProfileFragment : Fragment() {
         }
 
         binding.btnLogout.setOnClickListener {
-            FirestoreManager.auth?.signOut()
-            LocalAuthManager(requireContext()).signOut()
-            Toast.makeText(context, "Logged out successfully", Toast.LENGTH_SHORT).show()
+            val appCtx = context?.applicationContext
+            try {
+                // Stop Firestore listener BEFORE signing out to prevent listener crashes
+                com.example.stoveaide.utils.StoveNotificationHelper.stopMonitoring()
+                FirestoreManager.auth?.signOut()
+                if (appCtx != null) {
+                    LocalAuthManager(appCtx).signOut()
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("ProfileFragment", "Error signing out", e)
+            }
+            Toast.makeText(requireContext(), "Logged out successfully", Toast.LENGTH_SHORT).show()
             val intent = Intent(requireActivity(), WelcomeActivity::class.java).apply {
+                putExtra("IS_LOGOUT", true)
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
             }
             startActivity(intent)
+            // FLAG_ACTIVITY_CLEAR_TASK already destroys this activity — no need to call finish()
         }
     }
 

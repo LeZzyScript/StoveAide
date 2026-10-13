@@ -24,38 +24,25 @@ object FirestoreManager {
     private val realtimeDatabase: FirebaseDatabase?
         get() = try { FirebaseDatabase.getInstance(REALTIME_DATABASE_URL) } catch (e: Exception) { null }
 
-    fun listenToRealtimeMinutes(onUpdate: (Int) -> Unit, onError: (String) -> Unit = {}) {
-        val reference = realtimeDatabase?.getReference("test/data")
-        if (reference == null) {
-            onError("Realtime Database is not initialized.")
-            return
-        }
+    fun listenToRealtimeMinutes(stoveId: String = "STOVE-PH-8842", onUpdate: (Int) -> Unit, onError: (String) -> Unit = {}) {
+        realtimeDatabase?.getReference("stoves/$stoveId/activeMinutes")
+            ?.addValueEventListener(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    snapshot.getValue(Int::class.java)?.let(onUpdate)
+                }
 
-        reference.addValueEventListener(object : ValueEventListener {
-            override fun onDataChange(snapshot: DataSnapshot) {
-                snapshot.getValue(Int::class.java)?.let(onUpdate)
-            }
-
-            override fun onCancelled(error: DatabaseError) {
-                Log.e(TAG, "Error listening to Realtime Database", error.toException())
-                onError(error.message)
-            }
-        })
+                override fun onCancelled(error: DatabaseError) {
+                    Log.w(TAG, "Error listening to Realtime Database minutes: ${error.message}")
+                    onError(error.message)
+                }
+            })
     }
 
-    fun updateRealtimeMinutes(minutes: Int, onResult: (Boolean) -> Unit = {}) {
-        val reference = realtimeDatabase?.getReference("test/data")
-        if (reference == null) {
-            onResult(false)
-            return
-        }
-
-        reference.setValue(minutes)
-            .addOnSuccessListener { onResult(true) }
-            .addOnFailureListener { error ->
-                Log.e(TAG, "Error writing minutes to Realtime Database", error)
-                onResult(false)
-            }
+    fun updateRealtimeMinutes(minutes: Int, stoveId: String = "STOVE-PH-8842", onResult: (Boolean) -> Unit = {}) {
+        val updateMap = mapOf<String, Any>("activeMinutes" to minutes)
+        realtimeDatabase?.getReference("stoves/$stoveId")?.updateChildren(updateMap)
+            ?.addOnCompleteListener { onResult(true) }
+        firestore?.collection("stoves")?.document(stoveId)?.update(updateMap)
     }
 
     /**
@@ -159,10 +146,9 @@ object FirestoreManager {
                     }
                 }
                 
-                // Initialize stove doc if not present
-                val initialData = StoveData(stoveId = stoveId)
-                db.collection("stoves").document(stoveId).set(initialData)
-                onUpdate(initialData)
+                // Doc doesn't exist yet - notify with empty data but do NOT write to Firestore
+                // so that external pushes (e.g. web demo) are not overwritten
+                onUpdate(StoveData(stoveId = stoveId))
             }
     }
 

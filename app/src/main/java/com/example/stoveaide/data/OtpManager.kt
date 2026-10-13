@@ -75,21 +75,17 @@ object OtpManager {
     }
 
     /**
-     * Sends the 6-digit verification code to the recipient's email address via background dispatch.
+     * Dispatches OTP email asynchronously via EmailSender (JavaMail SMTP).
      */
     private fun sendEmailViaBackground(toEmail: String, code: String, purpose: String) {
-        Thread {
-            try {
-                // Trigger Firebase Auth password reset email as companion if applicable
-                if (purpose == PURPOSE_FORGOT_PASSWORD) {
-                    FirestoreManager.auth?.sendPasswordResetEmail(toEmail)
-                }
-
-                Log.d(TAG, "OTP Email dispatched to $toEmail | Code: $code | Purpose: $purpose")
-            } catch (e: Exception) {
-                Log.e(TAG, "Error in email dispatch background worker", e)
+        Log.d(TAG, "Dispatching OTP email to $toEmail | Purpose: $purpose via EmailSender")
+        EmailSender.sendOtpEmail(toEmail, code, purpose) { success, err ->
+            if (success) {
+                Log.d(TAG, "OTP email successfully delivered to $toEmail")
+            } else {
+                Log.w(TAG, "Email dispatch result: $err")
             }
-        }.start()
+        }
     }
 
     /**

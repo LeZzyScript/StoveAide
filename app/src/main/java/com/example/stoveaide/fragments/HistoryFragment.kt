@@ -9,6 +9,7 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import com.example.stoveaide.views.DaysUsageActivity
 import com.example.stoveaide.R
+import com.example.stoveaide.data.FirestoreManager
 import com.example.stoveaide.data.StoveRepository
 import com.example.stoveaide.databinding.FragmentHistoryBinding
 import com.example.stoveaide.databinding.ItemStoveCalendarLogBinding
@@ -35,7 +36,20 @@ class HistoryFragment : Fragment() {
     }
 
     private fun loadCalendarLogs() {
-        StoveRepository.listenToUsageLogs { logs ->
+        val user = FirestoreManager.auth?.currentUser
+        if (user == null) {
+            listenToUsageLogs(StoveRepository.DEFAULT_STOVE_ID)
+            return
+        }
+
+        FirestoreManager.getUserProfile(user.uid) { profile ->
+            listenToUsageLogs(profile?.stoveDeviceId?.takeIf { it.isNotBlank() }
+                ?: StoveRepository.DEFAULT_STOVE_ID)
+        }
+    }
+
+    private fun listenToUsageLogs(stoveId: String) {
+        StoveRepository.listenToUsageLogs(stoveId) { logs ->
             if (_binding == null) return@listenToUsageLogs
 
             binding.containerTodayLogs.removeAllViews()

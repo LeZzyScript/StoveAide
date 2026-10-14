@@ -1,5 +1,6 @@
 package com.example.stoveaide.data
 
+import android.content.Context
 import android.util.Log
 import com.example.stoveaide.models.StoveData
 import com.example.stoveaide.models.UserProfile
@@ -21,8 +22,11 @@ object FirestoreManager {
     val firestore: FirebaseFirestore?
         get() = try { FirebaseFirestore.getInstance() } catch (e: Exception) { null }
 
-    private val realtimeDatabase: FirebaseDatabase?
+    val realtimeDatabase: FirebaseDatabase?
         get() = try { FirebaseDatabase.getInstance(REALTIME_DATABASE_URL) } catch (e: Exception) { null }
+
+    val rtdb: FirebaseDatabase?
+        get() = realtimeDatabase
 
     fun listenToRealtimeMinutes(stoveId: String = "STOVE-PH-8842", onUpdate: (Int) -> Unit, onError: (String) -> Unit = {}) {
         realtimeDatabase?.getReference("stoves/$stoveId/activeMinutes")
@@ -56,16 +60,123 @@ object FirestoreManager {
             return
         }
 
-        db.collection("users")
-            .document(user.uid)
-            .set(user)
-            .addOnSuccessListener {
-                Log.d(TAG, "UserProfile saved to Firestore successfully!")
-                onResult(true, null)
+        val docId = if (user.uid.isNotBlank()) user.uid else user.email
+        if (docId.isNotBlank()) {
+            db.collection("users")
+                .document(docId)
+                .set(user)
+                .addOnSuccessListener {
+                    Log.d(TAG, "UserProfile saved to Firestore successfully!")
+                    onResult(true, null)
+                }
+                .addOnFailureListener { e ->
+                    Log.e(TAG, "Error saving UserProfile to Firestore", e)
+                    onResult(false, e.localizedMessage)
+                }
+        } else {
+            onResult(true, null)
+        }
+    }
+
+    /**
+     * Resolves the current user's profile across Firebase Auth, Firestore, and LocalAuthManager.
+     * Guarantees that whether a user creates an account, confirms a new password, or logs into an
+     * existing account, their name, email, and initials update immediately and accurately on the UI.
+     */
+    fun loadCurrentUserProfile(context: Context, onResult: (UserProfile) -> Unit) {
+        val localAuth = LocalAuthManager(context)
+        val cached = localAuth.getUserProfile()
+        if (cached != null && (cached.fullName.isNotBlank() || cached.firstName.isNotBlank())) {
+            onResult(cached)
+        }
+
+        val currentUser = auth?.currentUser
+        val email = currentUser?.email ?: localAuth.getCurrentEmail() ?: ""
+        val uid = currentUser?.uid ?: ""
+
+        val displayName = currentUser?.displayName ?: cached?.fullName ?: ""
+        val nameParts = if (displayName.isNotBlank()) displayName.trim().split(" ") else emptyList()
+        val derivedFirstName = when {
+            nameParts.isNotEmpty() -> nameParts.first()
+            cached?.firstName?.isNotBlank() == true -> cached.firstName
+            email.isNotBlank() -> email.substringBefore("@").replace(Regex("[0-9_.]"), "").replaceFirstChar { it.uppercase() }.ifBlank { "User" }
+            else -> "User"
+        }
+        val derivedLastName = when {
+            nameParts.size > 1 -> nameParts.drop(1).joinToString(" ")
+            cached?.lastName?.isNotBlank() == true -> cached.lastName
+            else -> ""
+        }
+        val derivedFullName = when {
+            displayName.isNotBlank() -> displayName
+            cached?.fullName?.isNotBlank() == true -> cached.fullName
+            email.isNotBlank() -> email.substringBefore("@")
+            else -> "User"
+        }
+
+        val fallbackProfile = UserProfile(
+            uid = uid.ifBlank { cached?.uid ?: "" },
+            firstName = derivedFirstName,
+            lastName = derivedLastName,
+            fullName = derivedFullName,
+            email = email,
+            stoveDeviceId = cached?.stoveDeviceId ?: "STOVE-PH-8842"
+        )
+
+        val db = firestore
+        if (db == null) {
+            localAuth.saveUserProfile(fallbackProfile)
+            onResult(fallbackProfile)
+            return
+        }
+
+        // Try Firestore by UID first, then by email
+        if (uid.isNotBlank()) {
+            db.collection("users").document(uid).get()
+                .addOnSuccessListener { snapshot ->
+                    val profile = snapshot.toObject(UserProfile::class.java)
+                    if (profile != null && (profile.fullName.isNotBlank() || profile.firstName.isNotBlank())) {
+                        localAuth.saveUserProfile(profile)
+                        onResult(profile)
+                    } else {
+                        fetchByEmail(db, email, localAuth, fallbackProfile, onResult)
+                    }
+                }
+                .addOnFailureListener {
+                    fetchByEmail(db, email, localAuth, fallbackProfile, onResult)
+                }
+        } else if (email.isNotBlank()) {
+            fetchByEmail(db, email, localAuth, fallbackProfile, onResult)
+        } else {
+            onResult(fallbackProfile)
+        }
+    }
+
+    private fun fetchByEmail(
+        db: FirebaseFirestore,
+        email: String,
+        localAuth: LocalAuthManager,
+        fallback: UserProfile,
+        onResult: (UserProfile) -> Unit
+    ) {
+        if (email.isBlank()) {
+            onResult(fallback)
+            return
+        }
+        db.collection("users").whereEqualTo("email", email).get()
+            .addOnSuccessListener { snapshot ->
+                val profile = snapshot.documents.firstOrNull()?.toObject(UserProfile::class.java)
+                if (profile != null && (profile.fullName.isNotBlank() || profile.firstName.isNotBlank())) {
+                    localAuth.saveUserProfile(profile)
+                    onResult(profile)
+                } else {
+                    localAuth.saveUserProfile(fallback)
+                    onResult(fallback)
+                }
             }
-            .addOnFailureListener { e ->
-                Log.e(TAG, "Error saving UserProfile to Firestore", e)
-                onResult(false, e.localizedMessage)
+            .addOnFailureListener {
+                localAuth.saveUserProfile(fallback)
+                onResult(fallback)
             }
     }
 
@@ -120,36 +231,85 @@ object FirestoreManager {
             }
     }
 
+    fun parseStoveDataFromRtdb(snapshot: DataSnapshot, defaultStoveId: String): StoveData {
+        val sId = snapshot.child("stoveId").getValue(String::class.java) ?: defaultStoveId
+        val status = snapshot.child("status").getValue(String::class.java) ?: "STANDBY"
+        val flameDetected = snapshot.child("flameDetected").getValue(Boolean::class.java) ?: false
+        val tempNum = snapshot.child("temperatureCelsius").value
+        val temperatureCelsius = when (tempNum) {
+            is Number -> tempNum.toFloat()
+            else -> 0f
+        }
+        val gasNum = snapshot.child("gasLevelPpm").value
+        val gasLevelPpm = when (gasNum) {
+            is Number -> gasNum.toInt()
+            else -> 0
+        }
+        val activeNum = snapshot.child("activeMinutes").value
+        val activeMinutes = when (activeNum) {
+            is Number -> activeNum.toInt()
+            else -> 0
+        }
+        val maxAlertNum = snapshot.child("maxAlertMinutes").value
+        val maxAlertMinutes = when (maxAlertNum) {
+            is Number -> maxAlertNum.toInt()
+            else -> 20
+        }
+        val lpgValveOpen = snapshot.child("lpgValveOpen").getValue(Boolean::class.java) ?: false
+        val lastCheckIn = (snapshot.child("lastCheckInTimestamp").value as? Number)?.toLong() ?: 0L
+
+        return StoveData(
+            stoveId = sId,
+            status = status,
+            flameDetected = flameDetected,
+            temperatureCelsius = temperatureCelsius,
+            gasLevelPpm = gasLevelPpm,
+            activeMinutes = activeMinutes,
+            maxAlertMinutes = maxAlertMinutes,
+            lpgValveOpen = lpgValveOpen,
+            lastCheckInTimestamp = lastCheckIn
+        )
+    }
+
     /**
-     * Listen to real-time IoT stove sensor updates from Firestore `stoves/{stoveId}`
+     * Listen to real-time IoT stove sensor updates from Realtime Database `stoves/{stoveId}`
+     * and Cloud Firestore `stoves/{stoveId}` for instant bidirectional updates.
      */
     fun listenToStoveData(stoveId: String, onUpdate: (StoveData) -> Unit) {
-        val db = firestore
-        if (db == null) {
-            onUpdate(StoveData(stoveId = stoveId))
-            return
-        }
-
-        db.collection("stoves")
-            .document(stoveId)
-            .addSnapshotListener { snapshot, error ->
-                if (error != null) {
-                    Log.e(TAG, "Error listening to stove data", error)
-                    return@addSnapshotListener
-                }
-
-                if (snapshot != null && snapshot.exists()) {
-                    val data = snapshot.toObject(StoveData::class.java)
-                    if (data != null) {
-                        onUpdate(data)
-                        return@addSnapshotListener
+        // 1. Listen to Realtime Database (instant updates from ESP32 & Web Demo)
+        realtimeDatabase?.getReference("stoves/$stoveId")
+            ?.addValueEventListener(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    if (snapshot.exists()) {
+                        val stoveData = parseStoveDataFromRtdb(snapshot, stoveId)
+                        onUpdate(stoveData)
                     }
                 }
-                
-                // Doc doesn't exist yet - notify with empty data but do NOT write to Firestore
-                // so that external pushes (e.g. web demo) are not overwritten
-                onUpdate(StoveData(stoveId = stoveId))
-            }
+
+                override fun onCancelled(error: DatabaseError) {
+                    Log.w(TAG, "RTDB listenToStoveData error: ${error.message}")
+                }
+            })
+
+        // 2. Listen to Cloud Firestore as complementary source
+        val db = firestore
+        if (db != null) {
+            db.collection("stoves")
+                .document(stoveId)
+                .addSnapshotListener { snapshot, error ->
+                    if (error != null) {
+                        Log.e(TAG, "Error listening to Firestore stove data", error)
+                        return@addSnapshotListener
+                    }
+
+                    if (snapshot != null && snapshot.exists()) {
+                        val data = snapshot.toObject(StoveData::class.java)
+                        if (data != null) {
+                            onUpdate(data)
+                        }
+                    }
+                }
+        }
     }
 
     /**

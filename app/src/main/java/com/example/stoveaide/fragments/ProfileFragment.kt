@@ -29,32 +29,7 @@ class ProfileFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        val currentUser = FirestoreManager.auth?.currentUser
-        if (currentUser != null) {
-            binding.tvUserEmail.text = currentUser.email ?: ""
-            FirestoreManager.getUserProfile(currentUser.uid) { profile ->
-                if (_binding == null) return@getUserProfile
-                if (profile != null) {
-                    binding.tvUserName.text = profile.getDisplayName()
-                    binding.tvStoveDeviceId.text = profile.stoveDeviceId
-                    
-                    val initials = when {
-                        profile.firstName.isNotBlank() && profile.lastName.isNotBlank() -> {
-                            "${profile.firstName.first()}${profile.lastName.first()}".uppercase()
-                        }
-                        profile.fullName.isNotBlank() -> {
-                            profile.fullName.trim().split(" ")
-                                .mapNotNull { it.firstOrNull()?.toString() }
-                                .take(2).joinToString("").uppercase()
-                        }
-                        else -> "U"
-                    }
-                    if (initials.isNotEmpty()) {
-                        binding.tvProfileAvatar.text = initials
-                    }
-                }
-            }
-        }
+        loadUserProfile()
 
         binding.btnLogout.setOnClickListener {
             val appCtx = context?.applicationContext
@@ -75,6 +50,37 @@ class ProfileFragment : Fragment() {
             }
             startActivity(intent)
             // FLAG_ACTIVITY_CLEAR_TASK already destroys this activity — no need to call finish()
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        loadUserProfile()
+    }
+
+    private fun loadUserProfile() {
+        val ctx = context ?: return
+        FirestoreManager.loadCurrentUserProfile(ctx) { profile ->
+            if (_binding == null) return@loadCurrentUserProfile
+            binding.tvUserEmail.text = profile.email
+            binding.tvUserName.text = profile.getDisplayName()
+            binding.tvStoveDeviceId.text = profile.stoveDeviceId
+
+            val initials = when {
+                profile.firstName.isNotBlank() && profile.lastName.isNotBlank() -> {
+                    "${profile.firstName.first()}${profile.lastName.first()}".uppercase()
+                }
+                profile.fullName.isNotBlank() -> {
+                    profile.fullName.trim().split(" ")
+                        .mapNotNull { it.firstOrNull()?.toString() }
+                        .take(2).joinToString("").uppercase()
+                }
+                profile.firstName.isNotBlank() -> profile.firstName.take(2).uppercase()
+                else -> "U"
+            }
+            if (initials.isNotEmpty()) {
+                binding.tvProfileAvatar.text = initials
+            }
         }
     }
 

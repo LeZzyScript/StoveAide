@@ -35,7 +35,7 @@ class ProfileFragment : Fragment() {
             val appCtx = context?.applicationContext
             try {
                 // Stop Firestore listener BEFORE signing out to prevent listener crashes
-                com.example.stoveaide.utils.StoveNotificationHelper.stopMonitoring()
+                com.example.stoveaide.StoveNotificationHelper.stopMonitoring()
                 FirestoreManager.auth?.signOut()
                 if (appCtx != null) {
                     LocalAuthManager(appCtx).signOut()

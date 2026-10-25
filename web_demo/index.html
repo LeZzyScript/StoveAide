@@ -1,0 +1,1048 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StoveAide IoT Controller & Telemetry Simulator</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+
+    <!-- Firebase SDKs (Compat for zero build step instant browser execution) -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+    <style>
+        :root {
+            --bg-dark: #0D1117;
+            --bg-card: #161B22;
+            --bg-card-border: #30363D;
+            --text-primary: #F0F6FC;
+            --text-secondary: #8B949E;
+            --accent-cyan: #38BDF8;
+            --accent-teal: #2DD4BF;
+            --accent-green: #4ADE80;
+            --accent-gold: #C59B27;
+            --accent-red: #FF4D4D;
+            --accent-blue: #38A1FF;
+            --font-main: 'Outfit', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-primary);
+            font-family: var(--font-main);
+            min-height: 100vh;
+            padding: 30px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            max-width: 1100px;
+            width: 100%;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--bg-card-border);
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .brand-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .brand-badge {
+            background: linear-gradient(135deg, #FF6B4A, #C59B27);
+            color: white;
+            font-weight: 700;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            letter-spacing: 1px;
+        }
+
+        h1 {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .status-pill {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(46, 204, 113, 0.15);
+            border: 1px solid #2ECC71;
+            color: #2ECC71;
+            padding: 6px 16px;
+            border-radius: 30px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #2ECC71;
+            box-shadow: 0 0 10px #2ECC71;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(0.95);
+                opacity: 0.8;
+            }
+
+            50% {
+                transform: scale(1.2);
+                opacity: 1;
+            }
+
+            100% {
+                transform: scale(0.95);
+                opacity: 0.8;
+            }
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1.4fr 1fr;
+            gap: 25px;
+        }
+
+        @media (max-width: 860px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--bg-card-border);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+        }
+
+        .card-header {
+            font-size: 17px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: var(--text-primary);
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .value-badge {
+            color: var(--text-primary);
+            font-family: var(--font-mono);
+            font-weight: 600;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 8px;
+            background: #21262D;
+            border-radius: 4px;
+            outline: none;
+            -webkit-appearance: none;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #D1D5DB;
+            border: 2px solid #6B7280;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+        }
+
+        .input-text,
+        select {
+            width: 100%;
+            background: #21262D;
+            border: 1px solid var(--bg-card-border);
+            border-radius: 8px;
+            padding: 10px 14px;
+            color: var(--text-primary);
+            font-family: var(--font-main);
+            font-size: 14px;
+            outline: none;
+            transition: border 0.2s;
+        }
+
+        .input-text:focus,
+        select:focus {
+            border-color: var(--accent-gold);
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #21262D;
+            padding: 12px 14px;
+            border-radius: 8px;
+            border: 1px solid var(--bg-card-border);
+            cursor: pointer;
+        }
+
+        .checkbox-group input {
+            cursor: pointer;
+            width: 18px;
+            height: 18px;
+        }
+
+        /* Buttons */
+        .btn-row {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            cursor: pointer;
+            font-family: var(--font-main);
+            font-size: 14px;
+            font-weight: 600;
+            padding: 12px 20px;
+            border-radius: 10px;
+            border: none;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #C59B27, #E0BA55);
+            color: #111;
+            flex: 1;
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 4px 16px rgba(197, 155, 39, 0.4);
+            transform: translateY(-1px);
+        }
+
+        .btn-danger {
+            background: rgba(255, 77, 77, 0.15);
+            border: 1px solid var(--accent-red);
+            color: var(--accent-red);
+        }
+
+        .btn-danger:hover {
+            background: var(--accent-red);
+            color: white;
+            box-shadow: 0 4px 16px rgba(255, 77, 77, 0.4);
+        }
+
+        .preset-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .btn-preset {
+            background: #21262D;
+            border: 1px solid var(--bg-card-border);
+            color: var(--text-primary);
+            padding: 10px 12px;
+            font-size: 13px;
+            text-align: left;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .btn-preset span.desc {
+            font-size: 11px;
+            color: var(--text-secondary);
+            font-weight: 400;
+        }
+
+        .btn-preset:hover {
+            border-color: var(--accent-cyan);
+            background: #2A313C;
+        }
+
+        /* Realtime Feedback */
+        .live-box {
+            background: #090D13;
+            border: 1px solid #21262D;
+            border-radius: 12px;
+            padding: 16px;
+            font-family: var(--font-mono);
+            font-size: 12px;
+            max-height: 280px;
+            overflow-y: auto;
+            color: #7EE787;
+            white-space: pre-wrap;
+            line-height: 1.6;
+        }
+
+        .toast-banner {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: #238636;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-weight: 500;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+            display: none;
+            animation: slideIn 0.3s;
+            z-index: 1000;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(20px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        /* Auth panel */
+        .auth-panel {
+            background: var(--bg-card);
+            border: 1px solid var(--bg-card-border);
+            border-radius: 16px;
+            padding: 28px;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .auth-user-info {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .auth-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #C59B27, #E0BA55);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 18px;
+            color: #111;
+            flex-shrink: 0;
+        }
+
+        .auth-name {
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .auth-email {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+
+        .auth-login-form {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .auth-login-form input {
+            background: #21262D;
+            border: 1px solid var(--bg-card-border);
+            border-radius: 8px;
+            padding: 10px 14px;
+            color: var(--text-primary);
+            font-family: var(--font-main);
+            font-size: 14px;
+            outline: none;
+            width: 200px;
+        }
+
+        .auth-login-form input:focus {
+            border-color: var(--accent-gold);
+        }
+
+        .btn-auth {
+            background: linear-gradient(135deg, #C59B27, #E0BA55);
+            color: #111;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .btn-signout {
+            background: rgba(255, 77, 77, 0.1);
+            border: 1px solid var(--accent-red);
+            color: var(--accent-red);
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <header>
+            <div class="brand-title">
+                <span class="brand-badge">DEMO CONTROLLER</span>
+                <h1>StoveAide Hardware Simulation Suite</h1>
+            </div>
+            <div class="status-pill" id="connStatus">
+                <div class="pulse-dot"></div>
+                <span>Firebase Connected</span>
+            </div>
+        </header>
+
+        <!-- Auth Panel: shows login form or current user -->
+        <div class="auth-panel" id="authPanel">
+            <!-- Signed-out state -->
+            <div id="authSignedOut" style="width:100%;">
+                <p style="color:var(--text-secondary); margin-bottom: 14px; font-size:14px;">🔐 Sign in with your
+                    StoveAide account to push telemetry to <strong>your</strong> device data.</p>
+                <div class="auth-login-form">
+                    <input type="email" id="authEmail" placeholder="your@email.com" />
+                    <input type="password" id="authPassword" placeholder="Password" />
+                    <button class="btn-auth" onclick="signIn()">Sign In</button>
+                </div>
+                <p style="color:var(--accent-red); font-size:12px; margin-top:8px;" id="authError"></p>
+            </div>
+
+            <!-- Signed-in state -->
+            <div id="authSignedIn"
+                style="display:none; width:100%; justify-content: space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+                <div class="auth-user-info">
+                    <div class="auth-avatar" id="authAvatar">?</div>
+                    <div>
+                        <div class="auth-name" id="authDisplayName">Loading...</div>
+                        <div class="auth-email" id="authDisplayEmail"></div>
+                    </div>
+                </div>
+                <button class="btn-signout" onclick="signOut()">Sign Out</button>
+            </div>
+        </div>
+
+        <div id="mainControls" style="display:none;">
+            <div class="grid">
+                <!-- Left Panel: Manual Controls -->
+                <div class="card">
+                    <div class="card-header">
+                        <span>Manual Telemetry Adjuster</span>
+                        <span style="font-size: 12px; color: var(--accent-gold);">ESP32 Simulation</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Stove ID Target
+                            <span class="value-badge" id="lblStoveId">STOVE-PH-8842</span>
+                        </label>
+                        <input type="text" id="inputStoveId" class="input-text" value="STOVE-PH-8842" />
+                    </div>
+
+                    <!-- 1. Burner Level (1-10) -->
+                    <div class="form-group">
+                        <label>Burner Level (Dial Intensity 1 - 10)
+                            <span class="value-badge" style="color: var(--accent-cyan);" id="valBurnerLevel">5.5</span>
+                        </label>
+                        <input type="range" id="rngBurnerLevel" min="1" max="10" step="0.5" value="5.5"
+                            oninput="updateValues()" />
+                    </div>
+
+                    <!-- 2. Burner Temperature (Safe -> Extreme, 25°C - 320°C) -->
+                    <div class="form-group">
+                        <label>Burner Temperature (°C / 1 - 10 Scale)
+                            <span class="value-badge" style="color: var(--accent-cyan);" id="valBurnerTemp">145°C
+                                (Scale: 5.5)</span>
+                        </label>
+                        <input type="range" id="rngBurnerTemp" min="1" max="10" step="0.1" value="5.5"
+                            oninput="updateValues()" />
+                    </div>
+
+                    <!-- 3. Gas Status (Safe -> Extreme, 0 - 1500 PPM) -->
+                    <div class="form-group">
+                        <label>Gas Sensor PPM (Safe -> Extreme)
+                            <span class="value-badge" style="color: var(--accent-teal);" id="valGasTemp">45 PPM (Scale:
+                                4.5)</span>
+                        </label>
+                        <input type="range" id="rngGasTemp" min="1" max="10" step="0.1" value="4.5"
+                            oninput="updateValues()" />
+                    </div>
+
+                    <!-- 4. Flame Behavior (Safe -> Extreme) -->
+                    <div class="form-group">
+                        <label>Flame Stability (Safe -> Extreme)
+                            <span class="value-badge" style="color: var(--accent-green);" id="valFlameBehavior">Score:
+                                3.5 (Steady Blue)</span>
+                        </label>
+                        <input type="range" id="rngFlameBehavior" min="1" max="10" step="0.1" value="3.5"
+                            oninput="updateValues()" />
+                    </div>
+
+                    <!-- 5. Active Cooking Minutes -->
+                    <div class="form-group">
+                        <label>Active Cooking Minutes
+                            <span class="value-badge" id="valActiveMinutes">18 mins</span>
+                        </label>
+                        <input type="range" id="rngActiveMinutes" min="0" max="300" step="1" value="18"
+                            oninput="updateValues()" />
+                    </div>
+
+                    <!-- Toggles: Flame & Valve -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px;">
+                        <label class="checkbox-group">
+                            <input type="checkbox" id="chkFlameDetected" checked />
+                            <span style="color: var(--text-primary); font-size: 13px;">Flame Detected</span>
+                        </label>
+                        <label class="checkbox-group">
+                            <input type="checkbox" id="chkValveOpen" checked />
+                            <span style="color: var(--text-primary); font-size: 13px;">LPG Valve Open</span>
+                        </label>
+                    </div>
+
+                    <!-- Main Action Buttons -->
+                    <div class="btn-row">
+                        <button class="btn-primary" onclick="pushLiveTelemetry()">
+                            🚀 Push Live Telemetry to App
+                        </button>
+                        <button class="btn-primary"
+                            style="background: linear-gradient(135deg, #38A1FF, #0077EE); color: white;"
+                            onclick="addCalendarLog()">
+                            📅 Add to Calendar Log
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Right Panel: Scenarios & Output Log -->
+                <div style="display: flex; flex-direction: column; gap: 20px;">
+                    <!-- Preset Scenarios -->
+                    <div class="card">
+                        <div class="card-header">
+                            <span>One-Click Simulation Presets</span>
+                            <span style="font-size: 12px; color: var(--text-secondary);">Test Android Alerts</span>
+                        </div>
+
+                        <div class="preset-grid">
+                            <button class="btn-preset" onclick="setPreset('safe')">
+                                <span style="color: var(--accent-green); font-weight: 600;">🟢 Safe Cooking</span>
+                                <span class="desc">11m • Low Temp (95°C) • 0 PPM</span>
+                            </button>
+
+                            <button class="btn-preset" onclick="setPreset('normal')">
+                                <span style="color: var(--accent-blue); font-weight: 600;">🔵 Normal Stew</span>
+                                <span class="desc">18m • Moderate (145°C) • Steady</span>
+                            </button>
+
+                            <button class="btn-preset" onclick="setPreset('heat_spike')">
+                                <span style="color: var(--accent-red); font-weight: 600;">🔥 Thermal Overheat</span>
+                                <span class="desc">Pan boil-dry (>285°C) • High Spike</span>
+                            </button>
+
+                            <button class="btn-preset" onclick="setPreset('gas_leak')">
+                                <span style="color: var(--accent-red); font-weight: 600;">⚠️ Gas Leak / Flameout</span>
+                                <span class="desc">Flame OFF • 850 PPM LPG</span>
+                            </button>
+
+                            <button class="btn-preset" onclick="setPreset('unattended')">
+                                <span style="color: #F59E0B; font-weight: 600;">⏱️ 2+ Hours Active</span>
+                                <span class="desc">120m • Hourly alert if app closed</span>
+                            </button>
+
+                            <button class="btn-preset" onclick="setPreset('turn_off')">
+                                <span style="color: #9CA3AF; font-weight: 600;">⏹️ Turn Off Stove</span>
+                                <span class="desc">0 mins • Safe shutdown</span>
+                            </button>
+                        </div>
+
+                        <div style="margin-top: 15px;">
+                            <button class="btn-danger" style="width: 100%;" onclick="triggerImmediateSpikeAlert()">
+                                🚨 Force Trigger Android Notification Alert ("Are you still using your stove?")
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Live Stream Feed -->
+                    <div class="card" style="flex: 1;">
+                        <div class="card-header">
+                            <span>Live Firestore Feed</span>
+                            <span style="font-size: 11px; color: var(--text-secondary);">Last sync: <span
+                                    id="lastSyncTime">Just now</span></span>
+                        </div>
+                        <div class="live-box" id="liveConsole">Connecting to Firestore stoves/STOVE-PH-8842...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div><!-- /mainControls -->
+
+    <div class="toast-banner" id="toast">Changes synchronized successfully!</div>
+
+    <script>
+        // 1. Firebase Initialization
+        const firebaseConfig = {
+            apiKey: "AIzaSyCKB5BUPdMx7QYwoObJ-8ZExmW2JcguplQ",
+            authDomain: "stoveaide.firebaseapp.com",
+            projectId: "stoveaide",
+            storageBucket: "stoveaide.firebasestorage.app",
+            databaseURL: "https://stoveaide-default-rtdb.asia-southeast1.firebasedatabase.app"
+        };
+
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const db = firebase.firestore();
+        const rtdb = firebase.database();
+        const auth = firebase.auth();
+
+        // Auth state observer
+        auth.onAuthStateChanged(user => {
+            const signedOutEl = document.getElementById('authSignedOut');
+            const signedInEl = document.getElementById('authSignedIn');
+            const mainControls = document.getElementById('mainControls');
+
+            if (user) {
+                signedOutEl.style.display = 'none';
+                signedInEl.style.display = 'flex';
+                mainControls.style.display = 'block';
+
+                const name = user.displayName || user.email.split('@')[0];
+                const initials = name.split(' ').map(p => p[0]).join('').toUpperCase().slice(0, 2);
+                document.getElementById('authAvatar').textContent = initials || '?';
+                document.getElementById('authDisplayName').textContent = name;
+                document.getElementById('authDisplayEmail').textContent = user.email;
+
+                // Load stove ID from Firestore user profile
+                db.collection('users').doc(user.uid).get().then(doc => {
+                    if (doc.exists && doc.data().stoveDeviceId) {
+                        document.getElementById('inputStoveId').value = doc.data().stoveDeviceId;
+                        document.getElementById('lblStoveId').textContent = doc.data().stoveDeviceId;
+                    }
+                    listenToLiveStove();
+                }).catch(() => { listenToLiveStove(); });
+
+                logConsole('✅ Signed in as ' + user.email);
+            } else {
+                signedOutEl.style.display = 'block';
+                signedInEl.style.display = 'none';
+                mainControls.style.display = 'none';
+            }
+        });
+
+        function signIn() {
+            const email = document.getElementById('authEmail').value.trim();
+            const password = document.getElementById('authPassword').value;
+            document.getElementById('authError').textContent = '';
+            if (!email || !password) {
+                document.getElementById('authError').textContent = 'Please enter email and password.';
+                return;
+            }
+            auth.signInWithEmailAndPassword(email, password).catch(err => {
+                document.getElementById('authError').textContent = err.message;
+            });
+        }
+
+        function signOut() {
+            auth.signOut();
+        }
+
+        function logConsole(msg) {
+            const el = document.getElementById("liveConsole");
+            const time = new Date().toLocaleTimeString();
+            el.innerText = `[${time}] ${msg}\n` + el.innerText.slice(0, 800);
+            document.getElementById("lastSyncTime").innerText = time;
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById("toast");
+            toast.innerText = message;
+            toast.style.display = "block";
+            setTimeout(() => {
+                toast.style.display = "none";
+            }, 3000);
+        }
+
+        function updateValues() {
+            const burnerLevel = parseFloat(document.getElementById("rngBurnerLevel").value);
+            const burnerTemp = parseFloat(document.getElementById("rngBurnerTemp").value);
+            const gasTemp = parseFloat(document.getElementById("rngGasTemp").value);
+            const flameScore = parseFloat(document.getElementById("rngFlameBehavior").value);
+            const activeMins = parseInt(document.getElementById("rngActiveMinutes").value);
+
+            // Calculate mapped values
+            const tempCelsius = Math.round(25 + (burnerTemp / 10) * 280);
+            const gasPpm = Math.round((gasTemp / 10) * 900);
+
+            document.getElementById("valBurnerLevel").innerText = burnerLevel.toFixed(1);
+            document.getElementById("valBurnerTemp").innerText = `${tempCelsius}°C (Scale: ${burnerTemp.toFixed(1)})`;
+            document.getElementById("valGasTemp").innerText = `${gasPpm} PPM (Scale: ${gasTemp.toFixed(1)})`;
+            document.getElementById("valFlameBehavior").innerText = `Score: ${flameScore.toFixed(1)}`;
+            document.getElementById("valActiveMinutes").innerText = `${activeMins} mins`;
+        }
+
+        function setPreset(type) {
+            if (type === 'safe') {
+                document.getElementById("rngBurnerLevel").value = 3.5;
+                document.getElementById("rngBurnerTemp").value = 3.0;
+                document.getElementById("rngGasTemp").value = 1.8;
+                document.getElementById("rngFlameBehavior").value = 2.0;
+                document.getElementById("rngActiveMinutes").value = 11;
+                document.getElementById("chkFlameDetected").checked = true;
+                document.getElementById("chkValveOpen").checked = true;
+            } else if (type === 'normal') {
+                document.getElementById("rngBurnerLevel").value = 5.5;
+                document.getElementById("rngBurnerTemp").value = 5.5;
+                document.getElementById("rngGasTemp").value = 4.5;
+                document.getElementById("rngFlameBehavior").value = 3.5;
+                document.getElementById("rngActiveMinutes").value = 18;
+                document.getElementById("chkFlameDetected").checked = true;
+                document.getElementById("chkValveOpen").checked = true;
+            } else if (type === 'heat_spike') {
+                document.getElementById("rngBurnerLevel").value = 9.0;
+                document.getElementById("rngBurnerTemp").value = 9.5; // ~290°C
+                document.getElementById("rngGasTemp").value = 2.5;
+                document.getElementById("rngFlameBehavior").value = 7.5;
+                document.getElementById("rngActiveMinutes").value = 25;
+                document.getElementById("chkFlameDetected").checked = true;
+                document.getElementById("chkValveOpen").checked = true;
+            } else if (type === 'gas_leak') {
+                document.getElementById("rngBurnerLevel").value = 6.0;
+                document.getElementById("rngBurnerTemp").value = 4.0;
+                document.getElementById("rngGasTemp").value = 9.0; // 810 PPM
+                document.getElementById("rngFlameBehavior").value = 9.0;
+                document.getElementById("rngActiveMinutes").value = 14;
+                document.getElementById("chkFlameDetected").checked = false; // Flameout!
+                document.getElementById("chkValveOpen").checked = true;
+            } else if (type === 'unattended') {
+                document.getElementById("rngBurnerLevel").value = 5.0;
+                document.getElementById("rngBurnerTemp").value = 5.2;
+                document.getElementById("rngGasTemp").value = 1.0;
+                document.getElementById("rngFlameBehavior").value = 3.0;
+                document.getElementById("rngActiveMinutes").value = 120; // 2 hours threshold
+                document.getElementById("chkFlameDetected").checked = true;
+                document.getElementById("chkValveOpen").checked = true;
+            } else if (type === 'turn_off') {
+                document.getElementById("rngBurnerLevel").value = 1.0;
+                document.getElementById("rngBurnerTemp").value = 1.0;
+                document.getElementById("rngGasTemp").value = 1.0;
+                document.getElementById("rngFlameBehavior").value = 1.0;
+                document.getElementById("rngActiveMinutes").value = 0;
+                document.getElementById("chkFlameDetected").checked = false;
+                document.getElementById("chkValveOpen").checked = false;
+            }
+            updateValues();
+            pushLiveTelemetry();
+        }
+
+        async function pushLiveTelemetry() {
+            const stoveId = document.getElementById("inputStoveId").value.trim() || "STOVE-PH-8842";
+            const burnerLevel = parseFloat(document.getElementById("rngBurnerLevel").value);
+            const burnerTemp = parseFloat(document.getElementById("rngBurnerTemp").value);
+            const gasTemp = parseFloat(document.getElementById("rngGasTemp").value);
+            const flameScore = parseFloat(document.getElementById("rngFlameBehavior").value);
+            const activeMins = parseInt(document.getElementById("rngActiveMinutes").value);
+            const flameDetected = document.getElementById("chkFlameDetected").checked;
+            const lpgValveOpen = document.getElementById("chkValveOpen").checked;
+
+            const tempCelsius = Math.round(25 + (burnerTemp / 10) * 280);
+            const gasPpm = Math.round((gasTemp / 10) * 900);
+
+            let status = "NORMAL";
+            if (gasPpm > 400 || tempCelsius > 250 || (lpgValveOpen && !flameDetected)) {
+                status = "DANGEROUS";
+            } else if (activeMins < 30 && tempCelsius < 150) {
+                status = "SAFE";
+            }
+
+            const data = {
+                stoveId: stoveId,
+                status: status,
+                burnerLevel: burnerLevel,
+                temperatureCelsius: tempCelsius,
+                gasLevelPpm: gasPpm,
+                flameDetected: flameDetected,
+                flameBehaviorScore: flameScore,
+                activeMinutes: activeMins,
+                lpgValveOpen: lpgValveOpen,
+                lastCheckInTimestamp: Date.now()
+            };
+
+            // 1. Write to Realtime Database (Instant sync to app & ESP32)
+            try {
+                await rtdb.ref(`stoves/${stoveId}`).update(data);
+                await rtdb.ref(`devices/${stoveId}/telemetry`).update(data);
+                logConsole(`✅ Realtime Database synced: stoves/${stoveId}`);
+                showToast("Live telemetry pushed to Android App!");
+            } catch (err) {
+                logConsole(`⚠️ RTDB sync notice: ${err.message}`);
+            }
+
+            // 2. Write to Cloud Firestore
+            try {
+                await db.collection("stoves").doc(stoveId).set(data, { merge: true });
+                logConsole(`✅ Cloud Firestore synced: stoves/${stoveId}`);
+            } catch (err) {
+                logConsole(`⚠️ Firestore notice: ${err.message} (Check Firestore Security Rules)`);
+            }
+
+            // 3. Auto-write Usage Calendar Log on every push (tracks session history)
+            await _writeCalendarLog(stoveId, burnerLevel, burnerTemp, gasTemp, flameScore, activeMins, status);
+
+            // 4. Notification Logic:
+            // - ONLY notify when activity lasts 2 or more hours (>= 120 mins)
+            // - OR notify for any anomaly according to demo website (heat spike >= 250°C, gas leak >= 400 PPM, flameout with valve open, status DANGEROUS)
+            let alertMsg = null;
+            if (status === "DANGEROUS" || tempCelsius >= 250 || gasPpm >= 400 || (lpgValveOpen && !flameDetected)) {
+                if (tempCelsius >= 250) {
+                    alertMsg = `High heat spike detected (${tempCelsius}°C). Are you still using your stove?`;
+                } else if (gasPpm >= 400) {
+                    alertMsg = `Elevated gas level detected (${gasPpm} PPM). Are you still using your stove?`;
+                } else if (lpgValveOpen && !flameDetected) {
+                    alertMsg = "Flameout detected with gas open! Are you still using your stove?";
+                } else {
+                    alertMsg = "Danger alert: Unsafe stove telemetry detected. Are you still using your stove?";
+                }
+            } else if (activeMins >= 120) {
+                const hours = Math.floor(activeMins / 60);
+                alertMsg = `Your stove has been active for ${hours} hours (${activeMins} minutes). Are you still using your stove?`;
+            }
+
+            if (alertMsg) {
+                await _writeNotification(stoveId, alertMsg);
+            } else {
+                logConsole(`ℹ️ Stove normal (${activeMins} min). Notifications only trigger at 2+ hrs or on anomalies.`);
+            }
+        }
+
+        // Internal helper: write a usage_log entry
+        async function _writeCalendarLog(stoveId, burnerLevel, burnerTemp, gasTemp, flameScore, activeMins, status) {
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+            const dateShortStr = now.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+            const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+            const calendarStatus = status === 'DANGEROUS' ? 'Dangerous' : status === 'SAFE' ? 'Safe' : 'Normal';
+
+            const logEntry = {
+                id: `log_${Date.now()}`,
+                dateLabel: dateStr,
+                dateShort: dateShortStr,
+                section: "Today",
+                status: calendarStatus,
+                startTime: timeStr,
+                endTime: timeStr,
+                durationMinutes: activeMins,
+                summarySentence: `Your stove burner was used for ${activeMins} minutes at ${calendarStatus.toLowerCase()} levels`,
+                burnerLevel: burnerLevel,
+                burnerTemperature: burnerTemp,
+                gasTemperature: gasTemp,
+                flameBehavior: flameScore,
+                timestamp: Date.now()
+            };
+
+            try {
+                await rtdb.ref(`stoves/${stoveId}/usage_logs/${logEntry.id}`).set(logEntry);
+                logConsole(`📅 RTDB Calendar Log auto-added: ${logEntry.id}`);
+            } catch (err) {
+                logConsole(`⚠️ RTDB log notice: ${err.message}`);
+            }
+            try {
+                await db.collection("stoves").doc(stoveId).collection("usage_logs").doc(logEntry.id).set(logEntry);
+                logConsole(`📅 Firestore Calendar Log auto-added.`);
+            } catch (err) {
+                logConsole(`⚠️ Firestore log notice: ${err.message}`);
+            }
+        }
+
+        // Internal helper: write a notification entry (triggers Android system notification via Firestore listener)
+        async function _writeNotification(stoveId, message) {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+            const dateStr = now.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+            const notif = {
+                id: `notif_${Date.now()}`,
+                dateLabel: "Today",
+                fullDate: dateStr,
+                timeLabel: timeStr,
+                message: message,
+                timestamp: Date.now()
+            };
+
+            try {
+                await rtdb.ref(`stoves/${stoveId}/notifications/${notif.id}`).set(notif);
+                logConsole(`🔔 RTDB Notification written: ${notif.id}`);
+            } catch (err) {
+                logConsole(`⚠️ RTDB notif notice: ${err.message}`);
+            }
+            try {
+                await db.collection("stoves").doc(stoveId).collection("notifications").doc(notif.id).set(notif);
+                logConsole(`🔔 Firestore Notification written → Android will alert!`);
+                showToast("🔔 Notification sent to Android app!");
+            } catch (err) {
+                logConsole(`⚠️ Firestore notif notice: ${err.message}`);
+            }
+        }
+
+        async function addCalendarLog() {
+            const stoveId = document.getElementById("inputStoveId").value.trim() || "STOVE-PH-8842";
+            const burnerLevel = parseFloat(document.getElementById("rngBurnerLevel").value);
+            const burnerTemp = parseFloat(document.getElementById("rngBurnerTemp").value);
+            const gasTemp = parseFloat(document.getElementById("rngGasTemp").value);
+            const flameScore = parseFloat(document.getElementById("rngFlameBehavior").value);
+            const activeMins = parseInt(document.getElementById("rngActiveMinutes").value);
+
+            let status = "Normal";
+            if (burnerTemp >= 8.5 || gasTemp >= 7.0 || activeMins > 100) {
+                status = "Dangerous";
+            } else if (activeMins <= 15 && burnerTemp <= 4.0) {
+                status = "Safe";
+            }
+
+            await _writeCalendarLog(stoveId, burnerLevel, burnerTemp, gasTemp, flameScore, activeMins, status.toUpperCase());
+            showToast("📅 Calendar entry manually added!");
+        }
+
+        async function triggerImmediateSpikeAlert() {
+            const stoveId = document.getElementById("inputStoveId").value.trim() || "STOVE-PH-8842";
+
+            // Set extreme spike values
+            document.getElementById("rngBurnerTemp").value = 9.8;
+            document.getElementById("rngGasTemp").value = 8.5;
+            document.getElementById("rngActiveMinutes").value = 14;
+            document.getElementById("chkFlameDetected").checked = true;
+            document.getElementById("chkValveOpen").checked = true;
+            updateValues();
+
+            const alertData = {
+                temperatureCelsius: 295,
+                gasLevelPpm: 680,
+                activeMinutes: 14,
+                status: "DANGEROUS",
+                lastCheckInTimestamp: Date.now()
+            };
+
+            // Push stove data to RTDB + Firestore
+            try {
+                await rtdb.ref(`stoves/${stoveId}`).update(alertData);
+                logConsole(`🚨 RTDB spike data pushed to ${stoveId}!`);
+            } catch (err) {
+                logConsole(`⚠️ RTDB alert notice: ${err.message}`);
+            }
+            try {
+                await db.collection("stoves").doc(stoveId).set(alertData, { merge: true });
+                logConsole(`🚨 Firestore spike data pushed!`);
+            } catch (err) {
+                logConsole(`⚠️ Firestore alert notice: ${err.message}`);
+            }
+
+            // Write notification (triggers Android system notification via Firestore listener)
+            await _writeNotification(stoveId, "High heat spike detected (295°C). Are you still using your stove?");
+
+            // Also write a calendar log for this alert session
+            await _writeCalendarLog(stoveId, 9.0, 9.8, 8.5, 7.5, 14, "DANGEROUS");
+
+            showToast("🚨 Alert pushed! Check your Android status bar!");
+            logConsole(`🚨 Spike alert complete — stove data, notification & calendar log written.`);
+        }
+
+        // Listen to live stove updates
+        function listenToLiveStove() {
+            const stoveId = document.getElementById("inputStoveId").value.trim() || "STOVE-PH-8842";
+
+            // Listen from Realtime Database
+            rtdb.ref(`stoves/${stoveId}`).on('value', snapshot => {
+                const data = snapshot.val();
+                if (data) {
+                    logConsole(`📡 Incoming RTDB Telemetry: Temp=${data.temperatureCelsius}°C, Gas=${data.gasLevelPpm}PPM, Active=${data.activeMinutes}m, Status=${data.status}`);
+                }
+            });
+
+            // Listen from Firestore
+            try {
+                db.collection("stoves").doc(stoveId).onSnapshot(doc => {
+                    if (doc.exists) {
+                        const data = doc.data();
+                        logConsole(`📡 Incoming Firestore Telemetry: Temp=${data.temperatureCelsius}°C, Gas=${data.gasLevelPpm}PPM, Active=${data.activeMinutes}m, Status=${data.status}`);
+                    }
+                });
+            } catch (_) { }
+        }
+
+        document.getElementById("inputStoveId").addEventListener("change", () => {
+            listenToLiveStove();
+        });
+
+        // Initial setup
+        updateValues();
+        listenToLiveStove();
+    </script>
+</body>
+
+</html>

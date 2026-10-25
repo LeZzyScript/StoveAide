@@ -206,6 +206,8 @@ class DashboardFragment : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
+        // Called when leaving dashboard to stop monitoring/listeners safely
+        com.example.stoveaide.StoveNotificationHelper.stopMonitoring()
         _binding = null
     }
 }
